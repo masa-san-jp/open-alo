@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
+from .capabilities import ProviderCapabilities
+
 
 class DecisionProvider(Protocol):
     """Return typed probabilistic decisions without mutating runtime state."""
 
     name: str
     model: str | None
+    capabilities: ProviderCapabilities
 
     def binary(
         self, decision_id: str, state: dict[str, Any], question: str

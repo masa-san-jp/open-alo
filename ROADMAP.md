@@ -18,10 +18,10 @@
 
 - [ ] Jev adapter
 - [ ] OpenAI-compatible adapter
-- [ ] provider capability metadata
-- [ ] normalized binary/categorical/scalar results
-- [ ] retry/error semantics
-- [ ] provider-independent evaluation fixtures
+- [x] provider capability metadata
+- [x] normalized binary/categorical/scalar results
+- [x] retry/error semantics
+- [x] provider-independent evaluation fixtures
 
 ## Milestone 2 — Reproducibility
 
