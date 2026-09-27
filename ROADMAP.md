@@ -17,7 +17,7 @@
 ## Milestone 1 — Real providers
 
 - [ ] Jev adapter
-- [ ] OpenAI-compatible adapter
+- [x] OpenAI-compatible adapter
 - [x] provider capability metadata
 - [x] normalized binary/categorical/scalar results
 - [x] retry/error semantics
