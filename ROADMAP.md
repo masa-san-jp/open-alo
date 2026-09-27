@@ -1,49 +1,76 @@
 # Roadmap
 
-## Milestone 0 — Executable minimum
+## P0 — Correct the ALO semantic model
 
-- [x] JSON Schema for `alo.yaml`
-- [x] parser and validator
-- [x] canonical Graph IR
-- [x] deterministic Mermaid generator
-- [x] mock Decision Provider
-- [x] deterministic rule engine
-- [x] run record format
-- [x] `alo validate`
-- [x] `alo graph`
-- [x] `alo run`
-- [x] `alo test`
+The first implementation pass used a superseded interpretation where ALO was treated primarily as a probabilistic workflow DSL.
 
-## Milestone 1 — Real providers
+Before further feature work, the implementation must conform to `docs/spec.md` Draft 0.2.
 
-- [x] Jev adapter
-- [x] OpenAI-compatible adapter
-- [x] provider capability metadata
-- [x] normalized binary/categorical/scalar results
-- [x] retry/error semantics
-- [x] provider-independent evaluation fixtures
+- [ ] schema represents `mainObj`
+- [ ] schema represents `subObjList`
+- [ ] schema represents `State`
+- [ ] schema represents `managerObj`
+- [ ] canonical prompt renderer preserves all four components
+- [ ] Graph IR represents the ALO object model
+- [ ] Mermaid/SVG diagrams show object structure plus execution overlay
+- [ ] runtime executes managerObj semantics
+- [ ] Jev is invoked only as an optional manager calculation/judgment mechanism
+- [ ] conformance tests reject implementations that lose the four core components
+- [ ] minimal example demonstrates Prompt → ALO Diagram → Jev calculation → State update
 
-## Milestone 2 — Reproducibility
+See: `docs/implementation-correction.md`.
 
-- [x] conformance suite
-- [x] golden tests
-- [x] run replay
-- [x] version pinning
-- [x] threshold versioning
-- [x] provider/model metadata capture
+## Existing implementation — reusable infrastructure, not canonical semantics
 
-## Milestone 3 — Accessibility
+The repository already contains working infrastructure for:
 
-- [x] self-hostable web Studio
-- [x] visual graph viewer
-- [x] natural-language ALO authoring assistant
-- [x] import/export as plain files
-- [x] no-login local mode
+- schema validation
+- parsing
+- workflow-oriented Graph IR
+- Mermaid/SVG generation
+- Decision Providers
+- Jev adapter
+- OpenAI-compatible adapter
+- deterministic rules
+- run records/replay
+- CLI
+- conformance harness
+- Studio
+- packaging/registry
 
-## Milestone 4 — Ecosystem
+These components should be migrated rather than discarded where practical.
 
-- [x] ALO package format
-- [x] Git repository install
-- [x] optional registry/discovery protocol
-- [x] AEP governance process
-- [x] compatibility badges
+## P1 — Reproducible ALO authoring
+
+- [ ] natural-language authoring template
+- [ ] structured YAML/JSON serialization
+- [ ] deterministic canonical prompt rendering
+- [ ] versioned object definitions
+- [ ] explicit dynamic sub-object creation records
+
+## P2 — ALO visualization
+
+- [ ] object-structure diagram
+- [ ] state relationships
+- [ ] manager flow
+- [ ] optional execution/Jev overlay
+- [ ] stable Mermaid and SVG output
+
+## P3 — Jev calculation
+
+- [ ] manager operation → Noul
+- [ ] manager operation → Choice
+- [ ] manager operation → Score
+- [ ] normalized result recording
+- [ ] deterministic update rules
+- [ ] offline/mock equivalent for testing
+
+## P4 — Accessibility and ecosystem
+
+- [ ] CLI workflows
+- [ ] self-hostable Studio
+- [ ] plain-file import/export
+- [ ] package format
+- [ ] Git repository install
+- [ ] optional discovery registry
+- [ ] AEP governance
