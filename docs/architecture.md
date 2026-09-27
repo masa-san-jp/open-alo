@@ -58,6 +58,12 @@ scalar       ↔ Score
 
 This mapping keeps ALO files portable to other providers.
 
+The repository includes a provisional `JevClient` protocol and `JevProvider`
+adapter boundary. It is intentionally pending real Jev API access and is not
+verified against the Jev service. No live Jev account is required to validate,
+compile, test, or run an ALO with another provider; the Mock and
+OpenAI-compatible providers remain fully sufficient for those workflows.
+
 ## Planned packages
 
 ```text
