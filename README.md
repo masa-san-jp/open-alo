@@ -1,5 +1,9 @@
 # Open ALO
 
+*[English](README.en.md)*
+
+[![Tests](https://github.com/masa-san-jp/open-alo/actions/workflows/tests.yml/badge.svg)](https://github.com/masa-san-jp/open-alo/actions/workflows/tests.yml)
+
 **Write ALO. See ALO. Calculate with Jev.**
 
 > **Canonical semantics: Draft 0.2**

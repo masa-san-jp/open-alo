@@ -1,0 +1,48 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run test suite
+        run: python -m unittest discover -s tests -v
+
+      - name: Validate canonical example
+        run: python -m packages.cli validate examples/canonical-minimal/alo.yaml
+
+      - name: Validate README's embedded ALO example (README.md and README.en.md)
+        run: |
+          python - <<'EOF'
+          import re
+          import subprocess
+          import sys
+
+          for readme in ("README.md", "README.en.md"):
+              text = open(readme, encoding="utf-8").read()
+              match = re.search(r"```yaml\n(.*?)\n```", text, re.S)
+              assert match, f"no yaml example block found in {readme}"
+              path = f"/tmp/{readme}.example.yaml"
+              with open(path, "w", encoding="utf-8") as fh:
+                  fh.write(match.group(1))
+              subprocess.run(
+                  [sys.executable, "-m", "packages.cli", "validate", path],
+                  check=True,
+              )
+          EOF
