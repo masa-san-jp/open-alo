@@ -34,6 +34,17 @@ class RuntimeTests(unittest.TestCase):
         matched_ids = [entry["id"] for entry in record["rule_trace"] if entry["matched"]]
         self.assertEqual(matched_ids, ["emergency"])
 
+    def test_run_captures_provider_metadata(self):
+        provider = MockDecisionProvider(
+            {"is_emergency": {"p_true": 0.97}, "category": {"technical": 1.0}}
+        )
+        provider.config = {"temperature": 0}
+        record = run(EXAMPLE_DOCUMENT, {"message": "prod is down"}, provider)
+
+        self.assertEqual(record["provider"], "mock")
+        self.assertEqual(record["provider_model"], "deterministic")
+        self.assertEqual(record["provider_config"], {"temperature": 0})
+
     def test_uncertain_input_requires_human_review(self):
         provider = MockDecisionProvider(
             {

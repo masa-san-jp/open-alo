@@ -153,6 +153,8 @@ run:
   timestamp:
   alo_id:
   alo_version:
+  engine_version:
+  graph_ir_version:
   provider:
   provider_model:
   provider_config:
@@ -166,6 +168,10 @@ run:
   output:
   status:
 ```
+
+The reference runtime populates `engine_version` and `threshold_version` in
+each Run Record. It also records the compiled Graph IR version as
+`graph_ir_version`.
 
 ## 13. Provider interface
 

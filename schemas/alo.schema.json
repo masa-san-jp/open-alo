@@ -189,6 +189,7 @@
         "spec_version": {"const": "0.1"},
         "id": {"$ref": "#/$defs/identifier"},
         "version": {"$ref": "#/$defs/nonEmptyString"},
+        "threshold_version": {"$ref": "#/$defs/nonEmptyString"},
         "purpose": {"$ref": "#/$defs/nonEmptyString"},
         "scope": {"$ref": "#/$defs/nonEmptyString"},
         "inputs": {
