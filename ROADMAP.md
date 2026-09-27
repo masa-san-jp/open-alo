@@ -2,7 +2,7 @@
 
 ## Milestone 0 — Executable minimum
 
-- [ ] JSON Schema for `alo.yaml`
+- [x] JSON Schema for `alo.yaml`
 - [ ] parser and validator
 - [ ] canonical Graph IR
 - [ ] deterministic Mermaid generator

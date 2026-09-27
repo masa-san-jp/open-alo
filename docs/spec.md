@@ -185,3 +185,14 @@ Implementations MAY use Jev, local LLMs, remote LLM APIs, deterministic mocks, o
 A conforming implementation can validate the supported ALO schema, compile it into equivalent Graph IR, preserve declared decision types, prevent provider-side state mutation, execute deterministic rules consistently, and emit a machine-readable run record.
 
 A formal conformance suite will be added before 1.0.
+
+## 15. Draft 0.1 schema
+
+The machine-readable JSON Schema for this draft is published at
+[`../schemas/alo.schema.json`](../schemas/alo.schema.json). It validates the
+parsed data model, regardless of whether the source document was written as
+YAML or JSON.
+
+The schema intentionally covers declaration-level constraints only. Expression
+semantics, reference resolution, rule ordering checks, and runtime behavior
+remain responsibilities of the validator and runtime.
