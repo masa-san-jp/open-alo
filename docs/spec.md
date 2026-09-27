@@ -1,204 +1,376 @@
-# Open ALO Specification — Draft 0.1
+# Open ALO Specification — Canonical Draft 0.2
 
-## 1. Scope
+> **Normative SSOT**
+>
+> This document defines what an ALO is. Implementations, schemas, graph formats, CLI behavior, Studio behavior, and Jev integration MUST conform to this document.
+>
+> Draft 0.1 incorrectly reduced ALO to a probabilistic workflow DSL. That interpretation is superseded by this document.
 
-This document defines the minimum interoperable representation of an Abstract Language Object (ALO).
+## 1. Definition
 
-An ALO describes a workflow using explicit inputs, explicit state, probabilistic decisions, deterministic derived values and rules, explicit outputs, and explicit stop conditions.
+ALO (Abstract Language Object) is a way to represent a real-world concept, system, role, or dynamic situation as a language-defined object that an LLM can interpret and operate.
 
-An ALO is not a prompt persona and is not tied to a particular model provider.
+ALO combines:
 
-## 2. Processing model
+- the flexibility of natural language;
+- explicit object structure;
+- explicit state;
+- an explicit manager that interprets input, coordinates objects, updates state, and produces output.
 
-```text
-Input
-  ↓
-Normalize
-  ↓
-State(t)
-  ↓
-Decision nodes
-  ↓
-Typed probabilistic results
-  ↓
-Deterministic rules
-  ↓
-State(t+1)
-  ↓
-Output
+An ALO is **not** identical to a decision graph, a rules engine, a Jev workflow, or a YAML schema.
+
+Those are representations or execution mechanisms for an ALO.
+
+## 2. Canonical conceptual model
+
+Every ALO is built around four core components.
+
+### 2.1 `mainObj`
+
+The top-level object that represents the whole system or concept.
+
+It defines:
+
+- what the ALO is;
+- its purpose;
+- its scope;
+- its high-level responsibilities.
+
+Example:
+
+```yaml
+mainObj:
+  id: learning_coach
+  name: Programming Learning Coach
+  purpose: Support a learner while maintaining an explicit learning state.
 ```
 
-Decision providers may read state. They do not mutate state.
+### 2.2 `subObjList`
 
-## 3. Required top-level fields
+The child objects that compose the `mainObj`.
+
+Each sub-object represents a meaningful function, concept, role, or capability inside the ALO.
+
+Example:
+
+```yaml
+subObjList:
+  - id: comprehension_analyzer
+    purpose: Evaluate learner understanding.
+
+  - id: motivation_manager
+    purpose: Track and respond to learner motivation.
+
+  - id: explanation_engine
+    purpose: Produce explanations appropriate to the current state.
+```
+
+Sub-objects are part of the ALO's conceptual structure. They MUST NOT be replaced merely by decision nodes.
+
+### 2.3 `State`
+
+The explicit dynamic state held by the ALO and/or its objects.
+
+State represents values that may change during interaction or simulation.
+
+Example:
+
+```yaml
+State:
+  level: 1
+  progress: 0.0
+  memory: []
+  activeStatus: initializing
+```
+
+For reproducibility, implementations SHOULD additionally define types, allowed values, initialization rules, and update ownership.
+
+### 2.4 `managerObj`
+
+The execution and coordination object.
+
+`managerObj` receives input and is responsible for:
+
+1. interpreting the input;
+2. determining which objects and state are relevant;
+3. coordinating `mainObj` and `subObjList`;
+4. performing or requesting required judgments/calculations;
+5. updating `State` according to declared rules;
+6. producing output;
+7. exposing enough execution information to reproduce or inspect the result.
+
+The manager may use deterministic code, an LLM, Jev, or other tools internally. These mechanisms do not replace `managerObj`; they implement parts of its work.
+
+## 3. Canonical relationship
+
+```text
+                      ALO
+                       │
+                ┌──────┴──────┐
+                │             │
+             mainObj        State
+                │             ▲
+                │ contains    │ reads / updates
+                ▼             │
+           subObjList         │
+                │             │
+                └──────┬──────┘
+                       │ coordinates
+                       ▼
+                  managerObj
+                       ▲
+                       │
+                     Input
+                       │
+                       ▼
+                     Output
+```
+
+The four-component model is mandatory conceptual vocabulary for Open ALO.
+
+## 4. Three layers of Open ALO
+
+Open ALO provides three distinct layers.
+
+### Layer A — ALO Prompt
+
+The language representation that tells an LLM what the object is and how it behaves.
+
+This is the primary authoring concern.
+
+### Layer B — ALO Diagram
+
+A visual projection of the ALO's object structure, state, relationships, manager flow, and optionally execution/calculation nodes.
+
+The diagram is derived from the ALO definition. It does not redefine it.
+
+### Layer C — Jev Calculation
+
+An optional execution mechanism used by `managerObj` for typed probabilistic judgments.
+
+Jev is not the definition of ALO.
+
+The relationship is:
+
+```text
+ALO Prompt
+   ↓
+ALO object model
+   ├──→ ALO Diagram
+   │
+   └──→ managerObj execution
+            ├── deterministic processing
+            ├── LLM processing
+            └── Jev calculation
+```
+
+## 5. ALO prompt authoring format
+
+The canonical prompt representation MUST make the four components visible.
+
+Minimum prompt:
+
+```markdown
+# ALO
+
+You are operating the following Abstract Language Object.
+
+## mainObj
+- id: <id>
+- purpose: <purpose>
+- responsibilities:
+  - ...
+
+## subObjList
+### <subObj id>
+- purpose: ...
+- responsibilities:
+  - ...
+
+## State
+- <state key>: <initial/current value>
+
+## managerObj
+For every input:
+1. Read the input.
+2. Read the current State.
+3. Select the relevant mainObj/subObj responsibilities.
+4. Perform the declared analyses/calculations.
+5. Update State only according to the declared update rules.
+6. Produce the declared output.
+7. Expose the resulting State and execution trace when requested.
+
+## Input
+<runtime input>
+```
+
+An implementation MAY generate this prompt from YAML/JSON, but the generated prompt MUST preserve these semantics.
+
+## 6. Structured serialization
+
+For tooling and reproducibility, an ALO MAY be serialized in YAML or JSON.
+
+The canonical serialized form MUST preserve the same conceptual model:
 
 ```yaml
 alo:
-  spec_version:
-  id:
-  version:
-  purpose:
-  inputs:
-  state_schema:
-  decisions:
-  transition_rules:
-  outputs:
+  spec_version: "0.2"
+  id: example
+  version: "0.1.0"
+
+  mainObj:
+    id: example
+    purpose: ...
+
+  subObjList:
+    - id: sub_1
+      purpose: ...
+
+  State:
+    ...
+
+  managerObj:
+    input: ...
+    process:
+      - ...
+    state_updates:
+      - ...
+    output: ...
 ```
 
-Optional fields include `scope`, `objects`, `derived_values`, `thresholds`, `stop_conditions`, and `invariants`.
+Additional fields are allowed, but an implementation MUST NOT redefine ALO so that these four components disappear.
 
-## 4. Inputs
+## 7. Reproducibility requirements
 
-Every input MUST declare a type. Missing required input MUST be rejected rather than inferred.
+A reproducible ALO implementation SHOULD make the following explicit:
 
-## 5. State
+- ALO version;
+- complete prompt or canonical serialization;
+- initial/current State;
+- input;
+- manager process;
+- sub-object selection or use;
+- external calls;
+- Jev questions/results when used;
+- deterministic calculations;
+- State changes;
+- final output.
 
-Every state field MUST define its type, initial value, and update authority. A Decision Provider MUST NOT directly mutate state.
+The same ALO version and the same recorded execution inputs should be inspectable and comparable across runs.
 
-## 6. Decision types
+Reproducibility does not require a stochastic model to emit byte-identical prose. It requires the system to expose the structure, state, calculations, and decisions that produced the result.
 
-Open ALO defines three provider-neutral decision primitives.
+## 8. ALO Diagram
 
-### 6.1 binary
+The diagram is a projection of the conceptual model.
 
-A yes/no semantic judgment.
+Minimum semantic node types:
 
-```yaml
-p_true: 0.91
-p_false: 0.09
-```
-
-Jev mapping: **Noul**.
-
-### 6.2 categorical
-
-A choice from a fixed set declared by the ALO.
-
-```yaml
-probabilities:
-  technical: 0.80
-  billing: 0.15
-  other: 0.05
-```
-
-Jev mapping: **Choice**.
-
-### 6.3 scalar
-
-A degree on a declared scale.
-
-```yaml
-score: 0.82
-confidence: 0.91
-```
-
-Jev mapping: **Score**.
-
-## 7. Decision constraints
-
-1. One decision node represents one judgment.
-2. Categorical options are fixed before execution.
-3. Arithmetic and date operations are not delegated to a decision provider.
-4. Explicit business rules are evaluated deterministically.
-5. Uncertainty is retained until a rule converts it to an action.
-6. Only the minimum required state is passed to a decision.
-
-## 8. Derived values
-
-Derived values are deterministic. The exact expression language is not frozen in draft 0.1.
-
-## 9. Transition rules
-
-Rules consume inputs, state, derived values, and decision results. If multiple rules can update the same field, execution order MUST be explicit.
-
-## 10. Stop conditions
-
-ALO runtimes MUST prevent implicit unbounded loops.
-
-Typical stop conditions include input error, terminal state, human review required, and maximum iteration count.
-
-## 11. Graph IR
-
-Initial node types:
-
-- `INPUT`
+- `MAIN_OBJECT`
+- `SUB_OBJECT`
 - `STATE`
-- `DERIVE`
-- `DECISION_BINARY`
-- `DECISION_CATEGORICAL`
-- `DECISION_SCALAR`
-- `RULE`
-- `ACTION`
+- `MANAGER`
+- `INPUT`
 - `OUTPUT`
-- `STOP`
 
-Initial edge types:
+Optional execution nodes:
 
-- `READS`
-- `DEPENDS_ON`
-- `GATES`
-- `UPDATES`
+- `JEV_NOUL`
+- `JEV_CHOICE`
+- `JEV_SCORE`
+- `DETERMINISTIC_CALC`
+- `RULE`
+- `EXTERNAL_TOOL`
+
+Minimum semantic relationships:
+
+- `CONTAINS`
+- `COORDINATES`
+- `READS_STATE`
+- `UPDATES_STATE`
+- `RECEIVES`
 - `EMITS`
-- `STOPS`
+- `CALLS`
 
-The diagram is a generated view of Graph IR, not a second source of truth.
+A graph that contains only input/decision/rule/output nodes but cannot represent `mainObj`, `subObjList`, `State`, and `managerObj` is NOT a complete ALO diagram.
 
-## 12. Reproducibility record
+## 9. Jev calculation
 
-A runtime SHOULD be able to persist:
+Jev is an optional calculation/judgment mechanism inside `managerObj`.
 
-```yaml
-run:
-  run_id:
-  timestamp:
-  alo_id:
-  alo_version:
-  engine_version:
-  graph_ir_version:
-  provider:
-  provider_model:
-  provider_config:
-  threshold_version:
-  normalized_input:
-  state_before:
-  decision_requests:
-  decision_results:
-  rule_trace:
-  state_after:
-  output:
-  status:
+Use Jev when the manager requires an ambiguous semantic judgment that benefits from a typed probability.
+
+Mapping:
+
+| Jev primitive | Use |
+| --- | --- |
+| Noul | binary / yes-no judgment |
+| Choice | choose among declared alternatives |
+| Score | degree, ranking, or scalar judgment |
+
+Example:
+
+```text
+managerObj
+  ↓
+"Does the learner understand this concept?"
+  ↓
+Jev Noul
+  ↓
+P(true)=0.88
+  ↓
+managerObj applies declared update rule
+  ↓
+State.progress changes
 ```
 
-The reference runtime populates `engine_version` and `threshold_version` in
-each Run Record. It also records the compiled Graph IR version as
-`graph_ir_version`.
+Jev MUST NOT replace the object model.
 
-## 13. Provider interface
+Jev SHOULD NOT be used for deterministic arithmetic, date arithmetic, exact matching, or other operations that normal code can reproduce exactly.
 
-The reference runtime will expose behavior equivalent to:
+## 10. State updates
 
-```python
-class DecisionProvider:
-    def binary(self, state, question): ...
-    def categorical(self, state, question, options): ...
-    def scalar(self, state, question, scale): ...
+Conceptually, `managerObj` owns State transition.
+
+An implementation MAY delegate the mechanical application of an explicit state-update rule to a rule engine.
+
+Therefore:
+
+```text
+managerObj declares/coordinates the transition
+runtime/rule engine may apply it deterministically
 ```
 
-Implementations MAY use Jev, local LLMs, remote LLM APIs, deterministic mocks, or other systems.
+This preserves the original ALO model while allowing reproducible execution.
 
-## 14. Conformance
+## 11. Dynamic extension
 
-A conforming implementation can validate the supported ALO schema, compile it into equivalent Graph IR, preserve declared decision types, prevent provider-side state mutation, execute deterministic rules consistently, and emit a machine-readable run record.
+The original ALO approach may allow new sub-objects to be added during interaction.
 
-A formal conformance suite will be added before 1.0.
+For reproducible implementations, dynamic extension MUST be explicit.
 
-## 15. Draft 0.1 schema
+A dynamically created object MUST have:
 
-The machine-readable JSON Schema for this draft is published at
-[`../schemas/alo.schema.json`](../schemas/alo.schema.json). It validates the
-parsed data model, regardless of whether the source document was written as
-YAML or JSON.
+- a unique ID;
+- creation reason;
+- parent relationship;
+- creation time/run;
+- definition;
+- version or run-local identity.
 
-The schema intentionally covers declaration-level constraints only. Expression
-semantics, reference resolution, rule ordering checks, and runtime behavior
-remain responsibilities of the validator and runtime.
+Silent mutation of `subObjList` is not permitted in reproducibility mode.
+
+## 12. Conformance rule
+
+Any Open ALO implementation claiming core conformance MUST demonstrate that it can represent and preserve:
+
+1. `mainObj`;
+2. `subObjList`;
+3. `State`;
+4. `managerObj`;
+5. the relationships among them;
+6. input-to-manager execution;
+7. state evolution;
+8. output generation.
+
+Jev support, Mermaid generation, CLI commands, packaging, and hosted services are optional capabilities layered on top of this core definition.
