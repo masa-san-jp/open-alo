@@ -20,25 +20,15 @@ Before further feature work, the implementation must conform to `docs/spec.md` D
 
 See: `docs/implementation-correction.md`.
 
-## Existing implementation — reusable infrastructure, not canonical semantics
-
-The repository already contains working infrastructure for:
-
-- schema validation
-- parsing
-- workflow-oriented Graph IR
-- Mermaid/SVG generation
-- Decision Providers
-- Jev adapter
-- OpenAI-compatible adapter
-- deterministic rules
-- run records/replay
-- CLI
-- conformance harness
-- Studio
-- packaging/registry
-
-These components should be migrated rather than discarded where practical.
+The superseded Draft 0.1 workflow DSL (schema, compiler, runtime, examples,
+conformance fixtures, and the natural-language authoring assistant that
+called an external LLM API to draft it) has been removed rather than kept
+as a migration path -- it did not represent canonical ALO semantics, and
+keeping it around risked confusing future readers about which model is
+correct. Reusable infrastructure that was already provider-neutral and not
+tied to the workflow-DSL shape (loaders, provider adapters, the Jev adapter,
+the expression evaluator, the CLI/Studio/packaging shells) was kept and is
+now used by the canonical model directly.
 
 ## P1 — Reproducible ALO authoring
 
@@ -67,8 +57,8 @@ These components should be migrated rather than discarded where practical.
 
 ## P4 — Accessibility and ecosystem
 
-- [x] CLI workflows (`alo validate/prompt/graph/run` dispatch on `spec_version`; `alo test`/`alo package` remain Draft 0.1-only for now)
-- [x] self-hostable Studio (`/api/prompt`, `/api/graph`, `/api/run` all dispatch on `spec_version`)
+- [x] CLI workflows (`alo validate/prompt/graph/run/test` all operate on the canonical model)
+- [x] self-hostable Studio (`/api/prompt`, `/api/graph`, `/api/run` all operate on the canonical model)
 - [x] plain-file import/export (pre-existing, client-side; unaffected by this correction)
 - [x] package format (pre-existing `alo package build/install`; verified unchanged against a canonical 0.2 ALO)
 - [x] Git repository install (pre-existing, unaffected)

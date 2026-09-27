@@ -1,12 +1,10 @@
-"""Compile a canonical Draft 0.2 ALO document into an Object Graph IR.
+"""Compile a canonical ALO document into an Object Graph IR.
 
 Per docs/complete-implementation-guide.md section 6 ("ALO Diagram"), the
 diagram must represent the object model (mainObj/subObjList/State/managerObj/
-Input/Output and their relationships), not only execution/decision nodes.
-This module is the object-model analogue of ``packages.compiler.compiler``
-(which compiles the superseded Draft 0.1 workflow DSL); it is deliberately
-separate rather than extending that module, since the two represent
-different things (an object model vs. a decision workflow).
+Input/Output and their relationships), not only execution/decision nodes --
+see docs/implementation-correction.md for why a decision-workflow-only graph
+does not satisfy this.
 
 Minimum node types: MAIN_OBJECT, SUB_OBJECT, STATE, MANAGER, INPUT, OUTPUT.
 Minimum relationships: CONTAINS, COORDINATES, READS_STATE, UPDATES_STATE,
@@ -17,6 +15,7 @@ Jev calculation; they do not replace the conceptual graph.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -193,3 +192,9 @@ def _sequence(value: Any, path: str) -> Sequence[Any]:
     if not isinstance(value, Sequence) or isinstance(value, (str, bytes, bytearray)):
         raise ObjectGraphError(f"{path} must be an array")
     return value
+
+
+def graph_to_json(graph: Mapping[str, Any]) -> str:
+    """Serialize Graph IR in a stable, human-readable JSON form."""
+
+    return json.dumps(graph, ensure_ascii=False, indent=2, sort_keys=True) + "\n"

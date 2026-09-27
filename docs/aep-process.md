@@ -41,7 +41,7 @@ Copy [`aeps/0000-template.md`](../aeps/0000-template.md) to
 4. **Backward compatibility** — whether existing valid ALO documents and
    existing Run Records remain valid; if not, what breaks and why that is
    acceptable at the current spec version.
-5. **Conformance impact** — which `conformance/cases/` fixtures need to be
+5. **Conformance impact** — which `conformance/canonical-cases/` fixtures need to be
    added or updated, and whether `packages/core`, `packages/compiler`, or
    `packages/runtime` need corresponding changes.
 

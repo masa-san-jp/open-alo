@@ -73,27 +73,9 @@ textarea {
 .graph-viewer svg { display: block; width: 100%; min-width: 520px; height: auto; }
 pre { overflow: auto; padding: .8rem; background: #f5f7fa; border-radius: 4px; }
 
-#assist-panel summary { cursor: pointer; font-weight: 600; }
-#assist-panel .hint { color: #546e7a; font-size: .85rem; }
-#assist-panel textarea { min-height: 6rem; }
-.assist-fields {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: .5rem .75rem;
-  align-items: center;
-  margin: .75rem 0;
-}
-.assist-fields input {
-  box-sizing: border-box;
-  width: 100%;
-  padding: .5rem .6rem;
-  border: 1px solid #b0bec5;
-  border-radius: 5px;
-  font: inherit;
-}
+.hint { color: #546e7a; font-size: .85rem; }
 
 @media (max-width: 760px) {
   .editor-grid { grid-template-columns: 1fr; }
   input[type="file"] { max-width: 100%; }
-  .assist-fields { grid-template-columns: 1fr; }
 }

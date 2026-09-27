@@ -1,0 +1,13 @@
+{
+  "cases": [
+    {
+      "name": "runs_the_jev_calculation_and_completes",
+      "input": {"user_message": "I understand backpropagation now."},
+      "provider": {"analyze_comprehension": {"p_true": 0.9}},
+      "expected": {
+        "status": "ok",
+        "output": {"response": null}
+      }
+    }
+  ]
+}

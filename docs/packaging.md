@@ -23,7 +23,7 @@ Build a validated package directory, excluding VCS directories, dotfiles, and
 `__pycache__`:
 
 ```bash
-alo package build examples/minimal --out build/
+alo package build examples/canonical-minimal --out build/
 ```
 
 Install from a Git repository into a destination directory. A local filesystem
@@ -40,8 +40,8 @@ Search a registry index and generate a compatibility badge:
 
 ```bash
 alo package search registry.json triage
-alo package badge examples/minimal/alo-package.json
-alo package badge examples/minimal/alo.yaml
+alo package badge examples/canonical-minimal/alo-package.json
+alo package badge examples/canonical-minimal/alo.yaml
 ```
 
 ## Optional local registry/discovery sketch

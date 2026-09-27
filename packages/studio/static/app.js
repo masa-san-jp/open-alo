@@ -101,28 +101,6 @@
       .catch(function (error) { showErrors([error.message]); });
   });
 
-  document.getElementById("assist-button").addEventListener("click", function () {
-    var description = document.getElementById("assist-description").value;
-    var model = document.getElementById("assist-model").value;
-    var baseUrl = document.getElementById("assist-base-url").value;
-    var apiKey = document.getElementById("assist-api-key").value;
-    post("/api/assist", {
-      description: description,
-      model: model,
-      base_url: baseUrl,
-      api_key: apiKey || null
-    })
-      .then(function (result) {
-        if (result.errors && result.errors.length && !result.source) {
-          showErrors(result.errors);
-          return;
-        }
-        source.value = result.source;
-        showErrors(result.errors || []);
-      })
-      .catch(function (error) { showErrors([error.message]); });
-  });
-
   exampleSelect.addEventListener("change", function () {
     var selected = exampleSelect.options[exampleSelect.selectedIndex];
     if (selected && selected.dataset.source) {

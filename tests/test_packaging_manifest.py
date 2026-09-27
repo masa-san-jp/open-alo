@@ -7,14 +7,14 @@ from packages.packaging import PackagingError, load_manifest, validate_manifest
 
 
 class PackagingManifestTests(unittest.TestCase):
-    def test_minimal_example_manifest_is_valid(self):
-        manifest = load_manifest("examples/minimal/alo-package.json")
+    def test_canonical_minimal_example_manifest_is_valid(self):
+        manifest = load_manifest("examples/canonical-minimal/alo-package.json")
         self.assertEqual(validate_manifest(manifest), [])
-        self.assertEqual(manifest["name"], "support-triage")
+        self.assertEqual(manifest["name"], "learning-coach")
 
     def test_missing_manifest_is_an_error(self):
         with self.assertRaises(PackagingError):
-            load_manifest("examples/minimal/missing-package.json")
+            load_manifest("examples/canonical-minimal/missing-package.json")
 
     def test_manifest_reports_missing_required_fields_and_entry(self):
         with tempfile.TemporaryDirectory() as tmp:

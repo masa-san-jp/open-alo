@@ -1,24 +1,26 @@
 import copy
 import unittest
 
-from packages.compiler import SvgError, compile_alo, render_svg
+from packages.compiler import SvgError, compile_object_graph, render_svg
+from packages.core import load_document
 
-from test_compiler import MINIMAL_ALO
+
+CANONICAL_MINIMAL = load_document("examples/canonical-minimal/alo.yaml")
 
 
 class SvgTests(unittest.TestCase):
     def test_renders_compiled_graph(self):
-        diagram = render_svg(compile_alo(MINIMAL_ALO))
+        diagram = render_svg(compile_object_graph(CANONICAL_MINIMAL))
 
         self.assertTrue(diagram.startswith('<svg xmlns="http://www.w3.org/2000/svg"'))
         self.assertIn('<rect x="', diagram)
-        self.assertIn("message", diagram)
+        self.assertIn("MAIN_OBJECT", diagram)
         self.assertIn("INPUT", diagram)
         self.assertIn('marker-end="url(#arrowhead)"', diagram)
         self.assertIn('class="edge-label"', diagram)
 
     def test_output_is_deterministic_when_graph_order_changes(self):
-        graph = compile_alo(MINIMAL_ALO)
+        graph = compile_object_graph(CANONICAL_MINIMAL)
         reordered = copy.deepcopy(graph)
         reordered["nodes"] = list(reversed(reordered["nodes"]))
         reordered["edges"] = list(reversed(reordered["edges"]))

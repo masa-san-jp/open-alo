@@ -15,12 +15,12 @@ class LoaderTests(unittest.TestCase):
             self.assertEqual(document, {"alo": {"id": "x"}})
 
     def test_loads_yaml_document(self):
-        document = load_document("examples/minimal/alo.yaml")
-        self.assertEqual(document["alo"]["id"], "support-triage")
+        document = load_document("examples/canonical-minimal/alo.yaml")
+        self.assertEqual(document["alo"]["id"], "learning-coach")
 
     def test_rejects_missing_file(self):
         with self.assertRaisesRegex(LoadError, "file not found"):
-            load_document("examples/minimal/does-not-exist.yaml")
+            load_document("examples/canonical-minimal/does-not-exist.yaml")
 
     def test_rejects_invalid_json(self):
         with tempfile.TemporaryDirectory() as tmp:

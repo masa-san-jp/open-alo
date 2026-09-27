@@ -5,17 +5,10 @@ API envelope convention: malformed requests use HTTP 400 with
 error-only object. Successful responses retain the endpoint-specific payload
 shape, and ``/api/validate`` always includes an ``errors`` array.
 
-``/api/assist`` is optional: it requires the caller to supply their own
-``model``/``api_key``/``base_url`` for an OpenAI-compatible endpoint. The key
-is forwarded only to that endpoint for the single request and is never
-stored or logged by Studio. No other route ever requires it.
-
-``/api/graph`` and ``/api/run`` dispatch on the document's own
-``alo.spec_version``: ``"0.2"`` (canonical: mainObj/subObjList/State/
-managerObj) uses ``compile_object_graph``/``run_manager``; ``"0.1"``
-(legacy workflow DSL) keeps using ``compile_alo``/``run``. ``/api/prompt``
-only supports canonical documents -- Draft 0.1 has no object model to
-render an ALO Prompt from.
+All routes operate on the canonical ALO object model (mainObj/subObjList/
+State/managerObj -- see docs/spec.md). ``/api/run`` uses only
+``MockDecisionProvider`` by design: the no-login local mode works without a
+network connection or API key.
 """
 
 from __future__ import annotations
@@ -25,27 +18,23 @@ import mimetypes
 import tempfile
 import urllib.parse
 import webbrowser
-from collections.abc import Mapping
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
 from packages.compiler import (
-    CompileError,
     MermaidError,
     ObjectGraphError,
     PromptError,
-    compile_alo,
     compile_object_graph,
     render_mermaid,
     render_prompt,
     render_svg,
 )
 from packages.core import LoadError, load_document, validate_alo
-from packages.providers import MockDecisionProvider, ProviderError
-from packages.runtime import ManagerError, run as run_alo, run_manager
-from packages.studio.assistant import AssistantError, draft_alo
+from packages.providers import MockDecisionProvider
+from packages.runtime import ManagerError, run_manager
 
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -101,7 +90,6 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
             "/api/graph": self._post_graph,
             "/api/prompt": self._post_prompt,
             "/api/run": self._post_run,
-            "/api/assist": self._post_assist,
         }
         handler = routes.get(path)
         if handler is None:
@@ -140,13 +128,10 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, {"errors": errors})
             return
         try:
-            if _is_canonical(document):
-                graph = compile_object_graph(document)
-            else:
-                graph = compile_alo(document)
+            graph = compile_object_graph(document)
             mermaid = render_mermaid(graph, direction=direction)
             svg = render_svg(graph, direction=direction)
-        except (CompileError, ObjectGraphError, MermaidError, ValueError) as error:
+        except (ObjectGraphError, MermaidError, ValueError) as error:
             self._send_json(HTTPStatus.OK, {"errors": [str(error)]})
             return
         self._send_json(
@@ -163,12 +148,6 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
         document, errors = _load_and_validate_text(source)
         if errors or document is None:
             self._send_json(HTTPStatus.OK, {"errors": errors})
-            return
-        if not _is_canonical(document):
-            self._send_json(
-                HTTPStatus.OK,
-                {"errors": ["alo prompt requires a canonical (spec_version 0.2) ALO document"]},
-            )
             return
         try:
             prompt = render_prompt(document)
@@ -194,42 +173,11 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, {"errors": errors})
             return
         try:
-            if _is_canonical(document):
-                record = run_manager(document, input_data, MockDecisionProvider(responses))
-            else:
-                record = run_alo(document, input_data, MockDecisionProvider(responses))
+            record = run_manager(document, input_data, MockDecisionProvider(responses))
         except (ValueError, TypeError, KeyError, ManagerError) as error:
             self._send_json(HTTPStatus.OK, {"errors": [str(error)]})
             return
         self._send_json(HTTPStatus.OK, record)
-
-    def _post_assist(self, body: Any) -> None:
-        description = body.get("description")
-        model = body.get("model")
-        if not isinstance(description, str) or not description.strip():
-            self._send_json(HTTPStatus.BAD_REQUEST, {"errors": ["description must be a non-empty string"]})
-            return
-        if not isinstance(model, str) or not model.strip():
-            self._send_json(HTTPStatus.BAD_REQUEST, {"errors": ["model must be a non-empty string"]})
-            return
-        api_key = body.get("api_key")
-        base_url = body.get("base_url", "https://api.openai.com/v1")
-        if api_key is not None and not isinstance(api_key, str):
-            self._send_json(HTTPStatus.BAD_REQUEST, {"errors": ["api_key must be a string"]})
-            return
-        if not isinstance(base_url, str) or not base_url.strip():
-            self._send_json(HTTPStatus.BAD_REQUEST, {"errors": ["base_url must be a non-empty string"]})
-            return
-        try:
-            source = draft_alo(description, model=model, api_key=api_key, base_url=base_url)
-        except (AssistantError, ProviderError) as error:
-            self._send_json(HTTPStatus.OK, {"errors": [str(error)]})
-            return
-        document, errors = _load_and_validate_text(source)
-        self._send_json(
-            HTTPStatus.OK,
-            {"source": source, "valid": document is not None and not errors, "errors": errors},
-        )
 
     def _read_json_body(self) -> Any:
         raw_length = self.headers.get("Content-Length")
@@ -288,11 +236,6 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: Any) -> None:
         # Keep normal API use quiet; errors are still represented in responses.
         return
-
-
-def _is_canonical(document: Mapping[str, Any]) -> bool:
-    alo = document.get("alo")
-    return isinstance(alo, Mapping) and alo.get("spec_version") == "0.2"
 
 
 def _source_from_body(body: Any) -> str:

@@ -2,7 +2,6 @@ import json
 import threading
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -16,13 +15,7 @@ class StudioServerTests(unittest.TestCase):
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
         cls.base_url = f"http://127.0.0.1:{cls.server.server_address[1]}"
-        cls.source = Path("examples/minimal/alo.yaml").read_text(encoding="utf-8")
-        cls.input_data = json.loads(
-            Path("examples/minimal/input.json").read_text(encoding="utf-8")
-        )
-        cls.canonical_source = Path("examples/canonical-minimal/alo.yaml").read_text(
-            encoding="utf-8"
-        )
+        cls.source = Path("examples/canonical-minimal/alo.yaml").read_text(encoding="utf-8")
 
     @classmethod
     def tearDownClass(cls):
@@ -52,10 +45,10 @@ class StudioServerTests(unittest.TestCase):
         self.assertEqual(self.server.server_address[0], "127.0.0.1")
         self.assertNotEqual(self.server.server_address[0], "0.0.0.0")
 
-    def test_examples_lists_minimal(self):
+    def test_examples_lists_canonical_minimal(self):
         status, payload = self._get("/api/examples")
         self.assertEqual(status, 200)
-        self.assertTrue(any(item["id"] == "minimal" for item in payload))
+        self.assertTrue(any(item["id"] == "canonical-minimal" for item in payload))
 
     def test_validate_accepts_valid_and_reports_invalid_source(self):
         status, valid = self._post("/api/validate", {"source": self.source})
@@ -68,34 +61,24 @@ class StudioServerTests(unittest.TestCase):
         self.assertFalse(invalid["valid"])
         self.assertTrue(invalid["errors"])
 
-    def test_graph_returns_mermaid_and_svg(self):
-        status, payload = self._post("/api/graph", {"source": self.source})
+    def test_prompt_renders_all_four_components(self):
+        status, payload = self._post("/api/prompt", {"source": self.source})
         self.assertEqual(status, 200)
-        self.assertIn("mermaid", payload)
-        self.assertIn("svg", payload)
-        self.assertTrue(payload["svg"].startswith("<svg"))
+        self.assertIn("## mainObj", payload["prompt"])
+        self.assertIn("## managerObj", payload["prompt"])
 
-    def test_graph_dispatches_to_object_graph_for_canonical_source(self):
-        status, payload = self._post("/api/graph", {"source": self.canonical_source})
+    def test_graph_returns_object_graph_mermaid_and_svg(self):
+        status, payload = self._post("/api/graph", {"source": self.source})
         self.assertEqual(status, 200)
         self.assertIn("MAIN_OBJECT", payload["mermaid"])
         self.assertIn("MANAGER", payload["mermaid"])
+        self.assertTrue(payload["svg"].startswith("<svg"))
 
-    def test_prompt_renders_canonical_source(self):
-        status, payload = self._post("/api/prompt", {"source": self.canonical_source})
-        self.assertEqual(status, 200)
-        self.assertIn("## managerObj", payload["prompt"])
-
-    def test_prompt_rejects_legacy_source(self):
-        status, payload = self._post("/api/prompt", {"source": self.source})
-        self.assertEqual(status, 200)
-        self.assertIn("spec_version 0.2", payload["errors"][0])
-
-    def test_run_dispatches_to_manager_runtime_for_canonical_source(self):
+    def test_run_returns_manager_run_record(self):
         status, record = self._post(
             "/api/run",
             {
-                "source": self.canonical_source,
+                "source": self.source,
                 "input": {"user_message": "hello"},
                 "responses": {"analyze_comprehension": {"p_true": 0.9}},
             },
@@ -103,47 +86,7 @@ class StudioServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(record["status"], "ok")
         self.assertIn("State_after", record)
-
-    def test_run_returns_mock_run_record(self):
-        status, record = self._post(
-            "/api/run",
-            {
-                "source": self.source,
-                "input": self.input_data,
-                "responses": {
-                    "is_emergency": {"p_true": 0.97},
-                    "category": {"technical": 1.0},
-                },
-            },
-        )
-        self.assertEqual(status, 200)
-        self.assertEqual(record["status"], "terminal_state")
-        self.assertEqual(record["provider"], "mock")
-
-    def test_assist_returns_generated_source_and_validity(self):
-        canned = self.source
-        with patch("packages.studio.server.draft_alo", return_value=canned) as mock_draft:
-            status, payload = self._post(
-                "/api/assist",
-                {
-                    "description": "Route urgent support requests.",
-                    "model": "fake-model",
-                    "api_key": "fake-key",
-                },
-            )
-        self.assertEqual(status, 200)
-        self.assertEqual(payload["source"], canned)
-        self.assertTrue(payload["valid"])
-        self.assertEqual(payload["errors"], [])
-        mock_draft.assert_called_once()
-        _, kwargs = mock_draft.call_args
-        self.assertEqual(kwargs["model"], "fake-model")
-        self.assertEqual(kwargs["api_key"], "fake-key")
-
-    def test_assist_rejects_missing_description(self):
-        status, payload = self._post("/api/assist", {"model": "fake-model"})
-        self.assertEqual(status, 400)
-        self.assertTrue(payload["errors"])
+        self.assertIn("manager_trace", record)
 
 
 if __name__ == "__main__":

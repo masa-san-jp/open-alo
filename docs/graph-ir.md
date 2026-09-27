@@ -1,17 +1,22 @@
-# Graph IR — Draft 0.1
+# Object Graph IR
 
-Graph IR is the canonical intermediate representation between an ALO source
-document and generated views or runtime execution. Mermaid is a view of Graph
-IR; it is not a second source format.
+Object Graph IR is the canonical intermediate representation between a
+canonical ALO source document (`mainObj`/`subObjList`/`State`/`managerObj`
+-- see `docs/spec.md`) and generated views (Mermaid, SVG). It represents the
+ALO's **object structure**, not a decision workflow: a decision-only graph
+does not satisfy this representation (see
+`docs/complete-implementation-guide.md` section 6, and
+`docs/implementation-correction.md` for why the earlier Draft 0.1 workflow
+Graph IR was superseded).
 
 ## Envelope
 
 ```json
 {
-  "graph_ir_version": "0.1",
+  "object_graph_ir_version": "0.2",
   "source": {
-    "spec_version": "0.1",
-    "alo_id": "support-triage",
+    "spec_version": "0.2",
+    "alo_id": "learning-coach",
     "alo_version": "0.1.0"
   },
   "nodes": [],
@@ -19,9 +24,9 @@ IR; it is not a second source format.
 }
 ```
 
-`graph_ir_version` versions the IR independently from the ALO source schema.
-The source block preserves the ALO identity needed for caching, comparison,
-and reproducibility.
+`object_graph_ir_version` versions the IR independently from the ALO source
+schema. The source block preserves the ALO identity needed for caching,
+comparison, and reproducibility.
 
 ## Nodes
 
@@ -29,28 +34,36 @@ Every node has this shape:
 
 ```json
 {
-  "id": "decision.category",
-  "type": "DECISION_CATEGORICAL",
+  "id": "main.learning_coach",
+  "type": "MAIN_OBJECT",
   "data": {}
 }
 ```
 
-Node IDs are stable names formed from a namespace and identifier:
+The minimum required node types (`docs/complete-implementation-guide.md`
+section 6):
 
 | ALO element | Node ID | Node type |
 | --- | --- | --- |
-| input `message` | `input.message` | `INPUT` |
-| state `status` | `state.status` | `STATE` |
-| derived value `priority` | `derived.priority` | `DERIVE` |
-| binary decision `is_emergency` | `decision.is_emergency` | `DECISION_BINARY` |
-| categorical decision `category` | `decision.category` | `DECISION_CATEGORICAL` |
-| scalar decision `confidence` | `decision.confidence` | `DECISION_SCALAR` |
-| transition rule `route` | `rule.route` | `RULE` |
-| output `action` | `output.action` | `OUTPUT` |
-| stop condition | `stop.<condition>` | `STOP` |
+| `managerObj.input` | `input` | `INPUT` |
+| `mainObj` | `main.<mainObj id>` | `MAIN_OBJECT` |
+| each `subObjList` entry | `sub.<subObj id>` | `SUB_OBJECT` |
+| `State` (one aggregate node) | `state` | `STATE` |
+| `managerObj` | `manager.<managerObj id>` | `MANAGER` |
+| `managerObj.output` | `output` | `OUTPUT` |
 
-`ACTION` is reserved for a future explicit action declaration. Draft 0.1
-represents rule assignments directly with `UPDATES` and `EMITS` edges.
+Optional execution-overlay nodes, one per `managerObj.process` step that
+declares a Jev calculation:
+
+| Jev calculation type | Node type |
+| --- | --- |
+| `Noul` | `JEV_NOUL` |
+| `Choice` | `JEV_CHOICE` |
+| `Score` | `JEV_SCORE` |
+
+These overlay nodes document what the step *would* calculate; they do not
+replace the conceptual graph, and a graph with none of them (no Jev
+calculations declared) is still a complete, conformant Object Graph IR.
 
 ## Edges
 
@@ -58,68 +71,61 @@ Every edge has this shape:
 
 ```json
 {
-  "id": "reads:input.message->decision.category",
-  "from": "input.message",
-  "to": "decision.category",
-  "type": "READS"
+  "id": "receives:input->manager.learning_coach_manager",
+  "from": "input",
+  "to": "manager.learning_coach_manager",
+  "type": "RECEIVES"
 }
 ```
 
-The initial edge types are:
+The minimum required relationships:
 
-| Edge type | Meaning in Draft 0.1 |
+| Edge type | Meaning |
 | --- | --- |
-| `READS` | A decision reads an input, state, or derived value |
-| `GATES` | A rule condition refers to a decision, input, state, or derived value |
-| `UPDATES` | A rule writes a state field |
-| `EMITS` | A rule writes an output field |
-| `DEPENDS_ON` | Reserved for compiler dependencies not represented by the minimal compiler |
-| `STOPS` | A rule declares that matching it ends the run with a named stop condition |
+| `RECEIVES` | Input reaches the manager |
+| `COORDINATES` | The manager coordinates `mainObj` and each `subObjList` entry |
+| `CONTAINS` | `mainObj` composes a `subObjList` entry |
+| `READS_STATE` | The manager reads `State` |
+| `UPDATES_STATE` | The manager updates `State` |
+| `EMITS` | The manager produces `Output` |
 
-When a `set` target is declared both as a state field and as an output field,
-the compiler emits both an `UPDATES` edge and an `EMITS` edge. This supports
-the common pattern where a rule updates state and exposes the same value as an
-output.
+Plus one optional relationship for the execution overlay:
 
-A transition rule may declare an optional `stop_condition`, whose value must
-be one of the ALO's declared `stop_conditions`. The compiler emits a `STOPS`
-edge from the rule to the matching `STOP` node, and the reference runtime
-reports that stop condition as the Run Record's `status` when the rule
-matches.
+| Edge type | Meaning |
+| --- | --- |
+| `CALCULATES` | The manager invokes a Jev calculation node for one process step |
 
-The compiler sorts nodes and edges deterministically. Edge IDs are derived from
-their source, target, and type, so the same ALO produces the same serialized
-Graph IR regardless of mapping insertion order.
+The compiler sorts nodes and edges deterministically. Edge IDs are derived
+from their source, target, and type, so the same ALO produces the same
+serialized Object Graph IR regardless of mapping insertion order.
 
 ## Compiler API
 
-The current reference compiler accepts a parsed mapping. YAML parsing and JSON
-Schema validation are separate layers and are not hidden inside the compiler.
-
 ```python
-from packages.compiler import compile_alo, graph_to_json
+from packages.compiler import compile_object_graph, graph_to_json
 
-graph = compile_alo(parsed_document)
+graph = compile_object_graph(parsed_document)
 print(graph_to_json(graph))
 ```
 
-The compiler rejects unresolved references, unknown rule targets, duplicate
-node IDs, and duplicate transition priorities. It does not interpret the
-expression language for derived values; that language is intentionally not
-frozen in ALO Draft 0.1.
+`compile_object_graph` requires a canonical (`spec_version: "0.2"`) document
+and raises `ObjectGraphError` if `mainObj`, `subObjList`, `State`, or
+`managerObj` is missing, or if a process step declares an unknown Jev
+calculation type.
 
-## Mermaid output
-
-The reference renderer converts Graph IR into a `flowchart TD` diagram by
-default:
+## Diagram output
 
 ```python
-from packages.compiler import render_mermaid
+from packages.compiler import render_mermaid, render_svg
 
 mermaid = render_mermaid(graph)
+svg = render_svg(graph)
 ```
 
-Node shapes distinguish inputs, state, decisions, rules, outputs, and stop
-conditions. Edge labels preserve the Graph IR edge type. Labels are HTML-
-escaped and Mermaid IDs are sanitized with deterministic collision handling.
-The renderer accepts `TB`, `TD`, `BT`, `RL`, or `LR` as the optional direction.
+Both renderers operate generically on any `{nodes, edges}` Graph IR (they
+are shared with `packages.compiler.compile_object_graph`'s output; there is
+no Object-Graph-IR-specific renderer). Node shapes and colors distinguish
+`MAIN_OBJECT`, `SUB_OBJECT`, `STATE`, `MANAGER`, `INPUT`/`OUTPUT`, and the
+`JEV_*` overlay nodes. Labels are escaped and IDs are sanitized with
+deterministic collision handling. `render_mermaid` accepts `TB`, `TD`, `BT`,
+`RL`, or `LR` as the optional direction.

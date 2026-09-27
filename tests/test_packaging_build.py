@@ -14,7 +14,8 @@ class PackagingBuildTests(unittest.TestCase):
             output = root / "output"
             source.mkdir()
             (source / "alo.yaml").write_text(
-                Path("examples/minimal/alo.yaml").read_text(encoding="utf-8"), encoding="utf-8"
+                Path("examples/canonical-minimal/alo.yaml").read_text(encoding="utf-8"),
+                encoding="utf-8",
             )
             (source / "alo-package.json").write_text(
                 json.dumps(

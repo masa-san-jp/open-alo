@@ -12,7 +12,7 @@ class PackagingInstallTests(unittest.TestCase):
     def _create_git_repository(self, root: Path, *, nested: bool = False) -> Path:
         package = root / "packages" / "nested" if nested else root
         package.mkdir(parents=True, exist_ok=True)
-        shutil.copy("examples/minimal/alo.yaml", package / "alo.yaml")
+        shutil.copy("examples/canonical-minimal/alo.yaml", package / "alo.yaml")
         (package / "alo-package.json").write_text(
             json.dumps(
                 {

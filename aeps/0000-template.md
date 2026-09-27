@@ -28,6 +28,6 @@ not, what breaks and why is that acceptable at the current spec version?
 
 ## Conformance impact
 
-Which `conformance/cases/` fixtures need to be added or updated? Do
+Which `conformance/canonical-cases/` fixtures need to be added or updated? Do
 `packages/core`, `packages/compiler`, or `packages/runtime` need
 corresponding changes?

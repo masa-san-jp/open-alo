@@ -1,10 +1,10 @@
-"""A minimal, safe expression language for ALO `when` and `expression` fields.
+"""A minimal, safe expression language for `state_updates[].when` conditions.
 
-Draft 0.1 does not freeze an expression language (see docs/spec.md, section 8).
-This module implements a reference evaluator: a small subset of Python
-expression syntax, interpreted by walking a whitelisted AST rather than by
-calling ``eval``. Only literals, boolean/comparison/arithmetic operators, and
-dotted identifier lookups against a nested-mapping context are supported.
+Open ALO does not freeze an expression language. This module implements a
+reference evaluator: a small subset of Python expression syntax, interpreted
+by walking a whitelisted AST rather than by calling ``eval``. Only literals,
+boolean/comparison/arithmetic operators, and dotted identifier lookups
+against a nested-mapping context are supported.
 """
 
 from __future__ import annotations

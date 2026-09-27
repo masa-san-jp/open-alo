@@ -97,28 +97,24 @@ Responsibilities:
 - emit output;
 - persist a run trace.
 
-## 6. Existing Draft 0.1 implementation
+## 6. What was corrected
 
-The current repository contains a working workflow-oriented runtime created from the superseded Draft 0.1 interpretation.
+The first implementation pass (Draft 0.1) built a working
+`binary/categorical/scalar + transition_rules` workflow runtime as if that
+were the definition of ALO. It was not: see
+`docs/implementation-correction.md`. That code, its schema
+(`schemas/alo.schema.json`), its example (`examples/minimal/`), and its
+conformance fixtures (`conformance/cases/`) have been removed rather than
+kept as a migration path.
 
-Useful components may be retained:
+Components that were already provider-neutral, not tied to the workflow-DSL
+shape, were kept and now serve the canonical model directly: YAML/JSON
+loading, provider adapters (including the Jev adapter), the deterministic
+expression evaluator (now used for `managerObj.state_updates[].when`),
+Mermaid/SVG generation (which renders any `{nodes, edges}` graph, including
+Object Graph IR), the CLI, Studio, and packaging shells.
 
-- YAML loading;
-- schema validation infrastructure;
-- deterministic expression/rule execution;
-- provider adapters;
-- Jev adapter;
-- run records;
-- Mermaid/SVG generation;
-- CLI;
-- Studio;
-- packaging/conformance infrastructure.
-
-However, these components MUST be refactored so the canonical data model preserves:
-
-- `mainObj`;
-- `subObjList`;
-- `State`;
-- `managerObj`.
-
-The current `binary/categorical/scalar + transition_rules` representation may survive only as an execution submodel inside `managerObj`, not as the definition of ALO itself.
+The `binary/categorical/scalar + transition_rules` representation itself
+survives only where it belongs: as one possible execution submodel a
+`managerObj.process` step's `calculation` may invoke (see
+`packages/providers/`), never as the definition of ALO.

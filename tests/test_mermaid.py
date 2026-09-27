@@ -1,24 +1,25 @@
 import copy
 import unittest
 
-from packages.compiler import MermaidError, compile_alo, render_mermaid
+from packages.compiler import MermaidError, compile_object_graph, render_mermaid
+from packages.core import load_document
 
-from test_compiler import MINIMAL_ALO
+
+CANONICAL_MINIMAL = load_document("examples/canonical-minimal/alo.yaml")
 
 
 class MermaidTests(unittest.TestCase):
     def test_renders_compiled_graph(self):
-        diagram = render_mermaid(compile_alo(MINIMAL_ALO))
+        diagram = render_mermaid(compile_object_graph(CANONICAL_MINIMAL))
 
         self.assertTrue(diagram.startswith("flowchart TD\n"))
-        self.assertIn('n_input_message(["message<br/>INPUT"])', diagram)
-        self.assertIn('n_decision_category{"category<br/>DECISION_CATEGORICAL"}', diagram)
-        self.assertIn("n_input_message -->|READS| n_decision_category", diagram)
-        self.assertIn("n_rule_emergency -->|EMITS| n_output_action", diagram)
-        self.assertIn("classDef decision", diagram)
+        self.assertIn("MAIN_OBJECT", diagram)
+        self.assertIn("MANAGER", diagram)
+        self.assertIn("-->|RECEIVES|", diagram)
+        self.assertIn("classDef mainobj", diagram)
 
     def test_output_is_deterministic_when_graph_order_changes(self):
-        graph = compile_alo(MINIMAL_ALO)
+        graph = compile_object_graph(CANONICAL_MINIMAL)
         reordered = copy.deepcopy(graph)
         reordered["nodes"] = list(reversed(reordered["nodes"]))
         reordered["edges"] = list(reversed(reordered["edges"]))

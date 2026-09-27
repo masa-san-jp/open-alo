@@ -18,41 +18,54 @@ class CliTests(unittest.TestCase):
         return status, stdout.getvalue(), stderr.getvalue()
 
     def test_validate_accepts_valid_document(self):
-        status, out, _ = self._run(["validate", "examples/minimal/alo.yaml"])
+        status, out, _ = self._run(["validate", "examples/canonical-minimal/alo.yaml"])
         self.assertEqual(status, 0)
         self.assertIn("valid", out)
 
     def test_validate_rejects_missing_file(self):
-        status, _, err = self._run(["validate", "examples/minimal/missing.yaml"])
+        status, _, err = self._run(["validate", "examples/canonical-minimal/missing.yaml"])
         self.assertEqual(status, 1)
         self.assertIn("file not found", err)
 
-    def test_graph_renders_mermaid_flowchart(self):
-        status, out, _ = self._run(["graph", "examples/minimal/alo.yaml"])
-        self.assertEqual(status, 0)
-        self.assertTrue(out.startswith("flowchart TD"))
-
-    def test_graph_dispatches_to_object_graph_for_canonical_alo(self):
-        status, out, _ = self._run(["graph", "examples/canonical-minimal/alo.yaml"])
-        self.assertEqual(status, 0)
-        self.assertIn("MAIN_OBJECT", out)
-        self.assertIn("MANAGER", out)
-
-    def test_prompt_renders_canonical_alo(self):
+    def test_prompt_renders_the_four_components(self):
         status, out, _ = self._run(["prompt", "examples/canonical-minimal/alo.yaml"])
         self.assertEqual(status, 0)
         self.assertTrue(out.startswith("# ALO"))
         self.assertIn("## managerObj", out)
 
-    def test_prompt_rejects_legacy_alo(self):
-        status, _, err = self._run(["prompt", "examples/minimal/alo.yaml"])
-        self.assertEqual(status, 1)
-        self.assertIn("spec_version 0.2", err)
+    def test_graph_renders_object_graph_as_mermaid(self):
+        status, out, _ = self._run(["graph", "examples/canonical-minimal/alo.yaml"])
+        self.assertEqual(status, 0)
+        self.assertTrue(out.startswith("flowchart TD"))
+        self.assertIn("MAIN_OBJECT", out)
+        self.assertIn("MANAGER", out)
 
-    def test_run_dispatches_to_manager_runtime_for_canonical_alo(self):
+    def test_graph_writes_to_output_file(self):
         with tempfile.TemporaryDirectory() as tmp:
-            input_path = Path(tmp) / "input.json"
-            input_path.write_text(json.dumps({"user_message": "hi"}), encoding="utf-8")
+            out_path = Path(tmp) / "graph.mmd"
+            status, out, _ = self._run(
+                ["graph", "examples/canonical-minimal/alo.yaml", "--out", str(out_path)]
+            )
+            self.assertEqual(status, 0)
+            self.assertEqual(out, "")
+            self.assertTrue(out_path.read_text(encoding="utf-8").startswith("flowchart TD"))
+
+    def test_run_produces_run_record_json(self):
+        status, out, _ = self._run(
+            [
+                "run",
+                "examples/canonical-minimal/alo.yaml",
+                "--input",
+                "examples/canonical-minimal/input.json",
+            ]
+        )
+        self.assertEqual(status, 0)
+        record = json.loads(out)
+        self.assertEqual(record["alo"]["id"], "learning-coach")
+        self.assertIn("status", record)
+
+    def test_run_with_responses_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
             responses_path = Path(tmp) / "responses.json"
             responses_path.write_text(
                 json.dumps({"analyze_comprehension": {"p_true": 0.9}}), encoding="utf-8"
@@ -62,72 +75,33 @@ class CliTests(unittest.TestCase):
                     "run",
                     "examples/canonical-minimal/alo.yaml",
                     "--input",
-                    str(input_path),
-                    "--responses",
-                    str(responses_path),
-                ]
-            )
-        self.assertEqual(status, 0)
-        record = json.loads(out)
-        self.assertEqual(record["status"], "ok")
-        self.assertIn("State_after", record)
-
-    def test_graph_writes_to_output_file(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            out_path = Path(tmp) / "graph.mmd"
-            status, out, _ = self._run(
-                ["graph", "examples/minimal/alo.yaml", "--out", str(out_path)]
-            )
-            self.assertEqual(status, 0)
-            self.assertEqual(out, "")
-            self.assertTrue(out_path.read_text(encoding="utf-8").startswith("flowchart TD"))
-
-    def test_run_produces_run_record_json(self):
-        status, out, _ = self._run(
-            ["run", "examples/minimal/alo.yaml", "--input", "examples/minimal/input.json"]
-        )
-        self.assertEqual(status, 0)
-        record = json.loads(out)
-        self.assertEqual(record["alo_id"], "support-triage")
-        self.assertIn("status", record)
-
-    def test_run_with_responses_file(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            responses_path = Path(tmp) / "responses.json"
-            responses_path.write_text(
-                json.dumps({"is_emergency": {"p_true": 0.97}, "category": {"technical": 1.0}}),
-                encoding="utf-8",
-            )
-            status, out, _ = self._run(
-                [
-                    "run",
-                    "examples/minimal/alo.yaml",
-                    "--input",
-                    "examples/minimal/input.json",
+                    "examples/canonical-minimal/input.json",
                     "--responses",
                     str(responses_path),
                 ]
             )
             self.assertEqual(status, 0)
             record = json.loads(out)
-            self.assertEqual(record["status"], "terminal_state")
-            self.assertEqual(record["output"]["action"], "escalate")
+            self.assertEqual(record["status"], "ok")
+            self.assertAlmostEqual(
+                record["jev_calls"][0]["result"]["p_true"], 0.9
+            )
 
     def test_run_reports_input_error_with_nonzero_status(self):
         with tempfile.TemporaryDirectory() as tmp:
             input_path = Path(tmp) / "input.json"
             input_path.write_text("{}", encoding="utf-8")
             status, out, _ = self._run(
-                ["run", "examples/minimal/alo.yaml", "--input", str(input_path)]
+                ["run", "examples/canonical-minimal/alo.yaml", "--input", str(input_path)]
             )
             self.assertEqual(status, 1)
             record = json.loads(out)
             self.assertEqual(record["status"], "input_error")
 
     def test_test_command_runs_declared_cases(self):
-        status, out, _ = self._run(["test", "examples/minimal"])
+        status, out, _ = self._run(["test", "examples/canonical-minimal"])
         self.assertEqual(status, 0)
-        self.assertIn("5/5 passed", out)
+        self.assertIn("1/1 passed", out)
 
     def test_no_command_prints_help(self):
         status, out, _ = self._run([])
@@ -137,19 +111,19 @@ class CliTests(unittest.TestCase):
     def test_package_build_command(self):
         with tempfile.TemporaryDirectory() as tmp:
             status, out, err = self._run(
-                ["package", "build", "examples/minimal", "--out", tmp]
+                ["package", "build", "examples/canonical-minimal", "--out", tmp]
             )
             self.assertEqual(status, 0, err)
             package_path = Path(out.strip())
             self.assertTrue(package_path.is_dir())
-            self.assertEqual(package_path.name, "support-triage-0.1.0")
+            self.assertEqual(package_path.name, "learning-coach-0.1.0")
 
     def test_package_install_command_uses_local_git_repository(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "repository"
             root.mkdir()
             for name in ("alo.yaml", "alo-package.json"):
-                shutil.copy(Path("examples/minimal") / name, root / name)
+                shutil.copy(Path("examples/canonical-minimal") / name, root / name)
             subprocess.run(["git", "init", str(root)], check=True, capture_output=True, text=True)
             subprocess.run(["git", "-C", str(root), "add", "."], check=True)
             subprocess.run(
@@ -174,7 +148,7 @@ class CliTests(unittest.TestCase):
                 ["package", "install", str(root), "--dest", str(destination)]
             )
             self.assertEqual(status, 0, err)
-            self.assertEqual(Path(out.strip()).name, "support-triage-0.1.0")
+            self.assertEqual(Path(out.strip()).name, "learning-coach-0.1.0")
 
     def test_package_search_command(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -184,9 +158,9 @@ class CliTests(unittest.TestCase):
                     {
                         "entries": [
                             {
-                                "name": "support-triage",
-                                "description": "Route support",
-                                "source": "./support",
+                                "name": "learning-coach",
+                                "description": "Support a learner",
+                                "source": "./learning-coach",
                                 "latest_version": "0.1.0",
                             }
                         ]
@@ -195,14 +169,14 @@ class CliTests(unittest.TestCase):
                 encoding="utf-8",
             )
             status, out, err = self._run(
-                ["package", "search", str(registry_path), "SUPPORT"]
+                ["package", "search", str(registry_path), "LEARNING"]
             )
             self.assertEqual(status, 0, err)
-            self.assertEqual(json.loads(out)[0]["name"], "support-triage")
+            self.assertEqual(json.loads(out)[0]["name"], "learning-coach")
 
     def test_package_badge_command_accepts_manifest(self):
         status, out, err = self._run(
-            ["package", "badge", "examples/minimal/alo-package.json"]
+            ["package", "badge", "examples/canonical-minimal/alo-package.json"]
         )
         self.assertEqual(status, 0, err)
         self.assertIn("Open%20ALO-0.1-blue", out)
