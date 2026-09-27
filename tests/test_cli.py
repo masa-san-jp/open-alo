@@ -32,6 +32,46 @@ class CliTests(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertTrue(out.startswith("flowchart TD"))
 
+    def test_graph_dispatches_to_object_graph_for_canonical_alo(self):
+        status, out, _ = self._run(["graph", "examples/canonical-minimal/alo.yaml"])
+        self.assertEqual(status, 0)
+        self.assertIn("MAIN_OBJECT", out)
+        self.assertIn("MANAGER", out)
+
+    def test_prompt_renders_canonical_alo(self):
+        status, out, _ = self._run(["prompt", "examples/canonical-minimal/alo.yaml"])
+        self.assertEqual(status, 0)
+        self.assertTrue(out.startswith("# ALO"))
+        self.assertIn("## managerObj", out)
+
+    def test_prompt_rejects_legacy_alo(self):
+        status, _, err = self._run(["prompt", "examples/minimal/alo.yaml"])
+        self.assertEqual(status, 1)
+        self.assertIn("spec_version 0.2", err)
+
+    def test_run_dispatches_to_manager_runtime_for_canonical_alo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "input.json"
+            input_path.write_text(json.dumps({"user_message": "hi"}), encoding="utf-8")
+            responses_path = Path(tmp) / "responses.json"
+            responses_path.write_text(
+                json.dumps({"analyze_comprehension": {"p_true": 0.9}}), encoding="utf-8"
+            )
+            status, out, _ = self._run(
+                [
+                    "run",
+                    "examples/canonical-minimal/alo.yaml",
+                    "--input",
+                    str(input_path),
+                    "--responses",
+                    str(responses_path),
+                ]
+            )
+        self.assertEqual(status, 0)
+        record = json.loads(out)
+        self.assertEqual(record["status"], "ok")
+        self.assertIn("State_after", record)
+
     def test_graph_writes_to_output_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             out_path = Path(tmp) / "graph.mmd"

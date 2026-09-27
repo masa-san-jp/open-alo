@@ -10,7 +10,16 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from packages.compiler import CompileError, MermaidError, compile_alo, render_mermaid
+from packages.compiler import (
+    CompileError,
+    MermaidError,
+    ObjectGraphError,
+    PromptError,
+    compile_alo,
+    compile_object_graph,
+    render_mermaid,
+    render_prompt,
+)
 from packages.core import LoadError, ValidationError, load_document, validate_alo
 from packages.packaging import (
     PackagingError,
@@ -23,7 +32,7 @@ from packages.packaging import (
     validate_manifest,
 )
 from packages.providers import MockDecisionProvider
-from packages.runtime import run as run_alo
+from packages.runtime import ManagerError, run as run_alo, run_manager
 from packages.studio import StudioServer
 
 __all__ = ["main"]
@@ -43,7 +52,7 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command")
 
     validate_parser = subparsers.add_parser(
-        "validate", help="Validate an ALO source file against Draft 0.1"
+        "validate", help="Validate an ALO source file (canonical 0.2 or legacy 0.1)"
     )
     validate_parser.add_argument("path", help="Path to an ALO YAML or JSON file")
     validate_parser.set_defaults(handler=_cmd_validate)
@@ -68,6 +77,14 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument("--out", help="Write the Run Record to this file instead of stdout")
     run_parser.set_defaults(handler=_cmd_run)
+
+    prompt_parser = subparsers.add_parser(
+        "prompt",
+        help="Render a canonical (spec_version 0.2) ALO as its ALO Prompt",
+    )
+    prompt_parser.add_argument("path", help="Path to a canonical ALO YAML or JSON file")
+    prompt_parser.add_argument("--out", help="Write the prompt to this file instead of stdout")
+    prompt_parser.set_defaults(handler=_cmd_prompt)
 
     test_parser = subparsers.add_parser(
         "test", help="Run the declared test cases for an example directory"
@@ -154,20 +171,49 @@ def _cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _is_canonical(document: Mapping[str, Any]) -> bool:
+    return document.get("alo", {}).get("spec_version") == "0.2"
+
+
 def _cmd_graph(args: argparse.Namespace) -> int:
     document, status = _load_and_validate(args.path)
     if document is None:
         return status
     try:
-        graph = compile_alo(document)
+        if _is_canonical(document):
+            graph = compile_object_graph(document)
+        else:
+            graph = compile_alo(document)
         diagram = render_mermaid(graph, direction=args.direction)
-    except (CompileError, MermaidError) as error:
+    except (CompileError, ObjectGraphError, MermaidError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
     if args.out:
         Path(args.out).write_text(diagram, encoding="utf-8")
     else:
         print(diagram, end="")
+    return 0
+
+
+def _cmd_prompt(args: argparse.Namespace) -> int:
+    document, status = _load_and_validate(args.path)
+    if document is None:
+        return status
+    if not _is_canonical(document):
+        print(
+            "error: alo prompt requires a canonical (spec_version 0.2) ALO document",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        prompt = render_prompt(document)
+    except PromptError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    if args.out:
+        Path(args.out).write_text(prompt, encoding="utf-8")
+    else:
+        print(prompt, end="")
     return 0
 
 
@@ -188,12 +234,15 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
     provider = MockDecisionProvider(responses)
     try:
-        record = run_alo(document, input_data, provider)
-    except ValidationError as error:
+        if _is_canonical(document):
+            record = run_manager(document, input_data, provider)
+        else:
+            record = run_alo(document, input_data, provider)
+    except (ValidationError, ManagerError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
 
-    text = json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    text = json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True, default=str) + "\n"
     if args.out:
         Path(args.out).write_text(text, encoding="utf-8")
     else:
