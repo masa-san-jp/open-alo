@@ -111,8 +111,9 @@ Decision Provider.
    `examples/canonical-minimal/alo.yaml` for a worked example.
 2. Write the YAML directly: `mainObj` (id, purpose, responsibilities),
    `subObjList` (each with id and purpose), `State` (each key with a `type`
-   and a `value`), and `managerObj` (`input`, `process` steps each with an
-   `id` and an `action`, `output`). A process step may declare
+   and a `value`), and `managerObj` (`input` and `output` as *arrays* of
+   field names, even for a single field; `process` steps each with an `id`
+   and an `action`). A process step may declare
    `calculation: {jev: {type: Noul|Choice|Score, question: ...}}` for a
    judgment it delegates to Jev -- see "Jev" above.
 3. Iterate with the CLI until it is correct:
