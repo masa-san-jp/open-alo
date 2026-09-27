@@ -42,8 +42,8 @@
 
 ## Milestone 4 — Ecosystem
 
-- [ ] ALO package format
-- [ ] Git repository install
-- [ ] optional registry/discovery protocol
+- [x] ALO package format
+- [x] Git repository install
+- [x] optional registry/discovery protocol
 - [x] AEP governance process
-- [ ] compatibility badges
+- [x] compatibility badges

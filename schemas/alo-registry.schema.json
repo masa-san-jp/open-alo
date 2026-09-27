@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-alo.org/schema/alo-registry-0.1.schema.json",
+  "title": "Open ALO Local Registry Index Draft 0.1",
+  "description": "Optional local/offline discovery index; not a hosted service protocol.",
+  "type": "object",
+  "required": ["entries"],
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "source", "latest_version"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1},
+          "source": {"type": "string", "minLength": 1},
+          "latest_version": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
