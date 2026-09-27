@@ -24,6 +24,15 @@ _TYPE_ORDER = {
     "ACTION": 60,
     "OUTPUT": 70,
     "STOP": 80,
+    # Canonical Draft 0.2 object model (packages.compiler.objectgraph).
+    "MANAGER": 15,
+    "MAIN_OBJECT": 18,
+    "SUB_OBJECT": 19,
+    "JEV_NOUL": 43,
+    "JEV_CHOICE": 44,
+    "JEV_SCORE": 45,
+    "DETERMINISTIC_CALC": 46,
+    "EXTERNAL_TOOL": 47,
 }
 _PALETTE = {
     "INPUT": ("#e3f2fd", "#1565c0", "#0d47a1"),
@@ -36,6 +45,14 @@ _PALETTE = {
     "ACTION": ("#fce4ec", "#ad1457", "#880e4f"),
     "OUTPUT": ("#ede7f6", "#4527a0", "#311b92"),
     "STOP": ("#ffebee", "#c62828", "#b71c1c"),
+    "MAIN_OBJECT": ("#fff8e1", "#f57f17", "#e65100"),
+    "SUB_OBJECT": ("#e8eaf6", "#3949ab", "#1a237e"),
+    "MANAGER": ("#fce4ec", "#ad1457", "#880e4f"),
+    "JEV_NOUL": ("#fffde7", "#f9a825", "#5f4300"),
+    "JEV_CHOICE": ("#fffde7", "#f9a825", "#5f4300"),
+    "JEV_SCORE": ("#fffde7", "#f9a825", "#5f4300"),
+    "DETERMINISTIC_CALC": ("#e0f2f1", "#00695c", "#004d40"),
+    "EXTERNAL_TOOL": ("#efebe9", "#5d4037", "#3e2723"),
 }
 _MARGIN = 28
 _BOX_WIDTH = 220

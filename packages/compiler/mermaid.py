@@ -26,6 +26,15 @@ _NODE_CLASSES = {
     "ACTION": "action",
     "OUTPUT": "output",
     "STOP": "stop",
+    # Canonical Draft 0.2 object model (packages.compiler.objectgraph).
+    "MAIN_OBJECT": "mainobj",
+    "SUB_OBJECT": "subobj",
+    "MANAGER": "manager",
+    "JEV_NOUL": "jev",
+    "JEV_CHOICE": "jev",
+    "JEV_SCORE": "jev",
+    "DETERMINISTIC_CALC": "calc",
+    "EXTERNAL_TOOL": "tool",
 }
 _NODE_SHAPES = {
     "INPUT": ("([", "])"),
@@ -38,6 +47,15 @@ _NODE_SHAPES = {
     "ACTION": ("([", "])"),
     "OUTPUT": ("([", "])"),
     "STOP": ("((", "))"),
+    # Canonical Draft 0.2 object model.
+    "MAIN_OBJECT": ("[[", "]]"),
+    "SUB_OBJECT": ("[", "]"),
+    "MANAGER": ("{{", "}}"),
+    "JEV_NOUL": ("{", "}"),
+    "JEV_CHOICE": ("{", "}"),
+    "JEV_SCORE": ("{", "}"),
+    "DETERMINISTIC_CALC": ("[", "]"),
+    "EXTERNAL_TOOL": (">", "]"),
 }
 
 
@@ -100,6 +118,12 @@ def render_mermaid(graph: Mapping[str, Any], direction: str = "TD") -> str:
             "    classDef action fill:#fce4ec,stroke:#ad1457,color:#880e4f",
             "    classDef output fill:#ede7f6,stroke:#4527a0,color:#311b92",
             "    classDef stop fill:#ffebee,stroke:#c62828,color:#b71c1c",
+            "    classDef mainobj fill:#fff8e1,stroke:#f57f17,color:#e65100",
+            "    classDef subobj fill:#e8eaf6,stroke:#3949ab,color:#1a237e",
+            "    classDef manager fill:#fce4ec,stroke:#ad1457,color:#880e4f",
+            "    classDef jev fill:#fffde7,stroke:#f9a825,color:#5f4300",
+            "    classDef calc fill:#e0f2f1,stroke:#00695c,color:#004d40",
+            "    classDef tool fill:#efebe9,stroke:#5d4037,color:#3e2723",
         ]
     )
     return "\n".join(lines) + "\n"
