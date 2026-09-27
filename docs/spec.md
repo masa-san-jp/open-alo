@@ -374,3 +374,101 @@ Any Open ALO implementation claiming core conformance MUST demonstrate that it c
 8. output generation.
 
 Jev support, Mermaid generation, CLI commands, packaging, and hosted services are optional capabilities layered on top of this core definition.
+
+
+## 13. Original ALO semantics that MUST be preserved
+
+The canonical four-component model is not only a static schema. The original ALO concept also includes the following behavioral semantics.
+
+### 13.1 managerObj execution cycle
+
+For each input, managerObj conceptually performs this cycle:
+
+1. receive and interpret the input;
+2. inspect the current State;
+3. identify the relevant mainObj/subObj responsibilities;
+4. perform required analysis, judgment, simulation, calculation, or tool use;
+5. determine a State transition;
+6. update State;
+7. generate the response/action/output;
+8. optionally expose the resulting State and execution trace.
+
+An implementation MAY realize these steps with an LLM, deterministic code, Jev, other tools, or a combination of them.
+
+### 13.2 Initial State
+
+ALO definitions MAY specify explicit initial State.
+
+Initial State is part of the ALO definition and MUST be distinguishable from runtime State.
+
+### 13.3 Initial Output / startup behavior
+
+An ALO MAY define startup behavior before ordinary interaction begins, for example:
+
+- render the initial State;
+- greet the user;
+- ask the first question;
+- initialize a task or simulation.
+
+Startup behavior belongs to managerObj and MUST be representable when present.
+
+### 13.4 State dashboard
+
+A State dashboard is a presentation of State, not State itself.
+
+ALO MAY request State to be displayed after each turn for debugging, inspection, or interaction. The canonical serialized State remains the source of truth.
+
+### 13.5 Dynamic sub-object extension
+
+ALO MAY allow managerObj to create or attach new sub-objects during interaction.
+
+Open ALO MUST NOT prohibit this capability.
+
+For reproducibility, dynamic changes MUST be explicit and recorded with at least:
+
+- object ID;
+- parent relationship;
+- definition;
+- creation reason;
+- run identity;
+- resulting object graph version or run-local mutation record.
+
+### 13.6 Natural-language behavior is first-class
+
+ALO is not limited to fields that can be reduced to deterministic code.
+
+Responsibilities, behavioral instructions, interpretation criteria, response-generation instructions, and simulation semantics MAY remain natural-language definitions executed by an LLM.
+
+The reproducibility layer exists to make those definitions, inputs, State, external judgments, and mutations inspectable. It MUST NOT erase the language-object nature of ALO.
+
+## 14. Execution profiles
+
+Open ALO distinguishes the conceptual model from execution strictness.
+
+### 14.1 Interactive profile
+
+Optimized for flexible LLM interaction.
+
+managerObj MAY perform language-based analysis and propose State updates directly, subject to declared constraints.
+
+### 14.2 Reproducible profile
+
+Optimized for inspection, comparison, and repeatability.
+
+The runtime SHOULD record:
+
+- exact ALO definition/prompt;
+- input;
+- State before;
+- manager steps;
+- sub-objects used;
+- model/provider calls;
+- Jev calls;
+- deterministic calculations;
+- proposed and applied State updates;
+- State after;
+- output.
+
+Where possible, deterministic calculations and mechanical update application SHOULD be separated from probabilistic judgment.
+
+Both profiles implement the same ALO conceptual model.
