@@ -109,6 +109,8 @@ def run_manager(
             raise ManagerError("each alo.managerObj.process step must be an object")
         step_id = raw_step.get("id")
         trace_entry: dict[str, Any] = {"step": step_id, "action": raw_step.get("action")}
+        if "uses" in raw_step:
+            trace_entry["subObj_used"] = raw_step["uses"]
 
         calculation = raw_step.get("calculation")
         if isinstance(calculation, Mapping):

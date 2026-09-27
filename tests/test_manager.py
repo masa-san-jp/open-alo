@@ -106,6 +106,19 @@ class ManagerRuntimeTests(unittest.TestCase):
         self.assertEqual(record["State_after"]["progress"], 0.0)
         self.assertEqual(record["state_updates"], [])
 
+    def test_records_which_sub_object_a_process_step_uses(self):
+        # Conformance question 8 ("how does managerObj coordinate sub-objects?"):
+        # a process step MAY declare `uses: <subObj id>`, and the runtime
+        # records it in the trace as `subObj_used` -- this is the only part
+        # of sub-object coordination the reference runtime tracks mechanically;
+        # the rest is language-defined (section 23.5).
+        document = copy.deepcopy(CANONICAL_MINIMAL)
+        document["alo"]["managerObj"]["process"][1]["uses"] = "comprehension_analyzer"
+        record = run_manager(document, {"user_message": "hello"}, MockDecisionProvider({}))
+        self.assertEqual(
+            record["manager_trace"][1]["subObj_used"], "comprehension_analyzer"
+        )
+
     def test_canonical_hash_is_deterministic(self):
         record_a = run_manager(CANONICAL_MINIMAL, {"user_message": "hello"})
         record_b = run_manager(copy.deepcopy(CANONICAL_MINIMAL), {"user_message": "hello"})
