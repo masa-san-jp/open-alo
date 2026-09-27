@@ -106,6 +106,67 @@ class ManagerRuntimeTests(unittest.TestCase):
         self.assertEqual(record["State_after"]["progress"], 0.0)
         self.assertEqual(record["state_updates"], [])
 
+    def test_choice_calculation_step(self):
+        document = copy.deepcopy(CANONICAL_MINIMAL)
+        document["alo"]["managerObj"]["process"].append(
+            {
+                "id": "classify_topic",
+                "action": "classify the topic",
+                "calculation": {
+                    "jev": {
+                        "type": "Choice",
+                        "question": "which topic?",
+                        "options": {"math": "Math", "cs": "CS"},
+                    }
+                },
+            }
+        )
+        provider = MockDecisionProvider(
+            {
+                "classify_topic": {"math": 0.8, "cs": 0.2},
+                "analyze_comprehension": {"p_true": 0.9},
+            }
+        )
+        record = run_manager(document, {"user_message": "hi"}, provider)
+
+        self.assertEqual(record["status"], "ok")
+        classify_call = next(
+            call for call in record["jev_calls"] if call["step"] == "classify_topic"
+        )
+        self.assertEqual(classify_call["primitive"], "Choice")
+        self.assertAlmostEqual(classify_call["result"]["math"], 0.8)
+        self.assertAlmostEqual(classify_call["result"]["cs"], 0.2)
+
+    def test_score_calculation_step(self):
+        document = copy.deepcopy(CANONICAL_MINIMAL)
+        document["alo"]["managerObj"]["process"].append(
+            {
+                "id": "rate_difficulty",
+                "action": "rate the difficulty",
+                "calculation": {
+                    "jev": {
+                        "type": "Score",
+                        "question": "how difficult?",
+                        "scale": {"min": 0, "max": 10},
+                    }
+                },
+            }
+        )
+        provider = MockDecisionProvider(
+            {
+                "rate_difficulty": {"score": 7, "confidence": 0.8},
+                "analyze_comprehension": {"p_true": 0.9},
+            }
+        )
+        record = run_manager(document, {"user_message": "hi"}, provider)
+
+        self.assertEqual(record["status"], "ok")
+        rate_call = next(
+            call for call in record["jev_calls"] if call["step"] == "rate_difficulty"
+        )
+        self.assertEqual(rate_call["primitive"], "Score")
+        self.assertEqual(rate_call["result"], {"score": 7.0, "confidence": 0.8})
+
     def test_records_which_sub_object_a_process_step_uses(self):
         # Conformance question 8 ("how does managerObj coordinate sub-objects?"):
         # a process step MAY declare `uses: <subObj id>`, and the runtime
