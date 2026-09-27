@@ -1,83 +1,124 @@
 # Architecture
 
-## Goal
+> This architecture implements the canonical ALO model in [spec.md](spec.md).  
+> `mainObj / subObjList / State / managerObj` are the core. Graphs, Jev, rules engines, and providers are supporting mechanisms.
 
-Open ALO makes language-defined judgment workflows inspectable and executable without binding the workflow to one model vendor.
-
-## Components
-
-```text
-              ALO source
-                  │
-                  ▼
-            ┌───────────┐
-            │ Validator │
-            └─────┬─────┘
-                  ▼
-            ┌───────────┐
-            │ Compiler  │
-            └─────┬─────┘
-                  ▼
-              Graph IR
-              /      \
-             /        \
-     Mermaid view    Runtime
-                       │
-               Decision Provider
-              /       |        \
-           Jev   OpenAI-compat  Mock
-                       │
-                  Rule Engine
-                       │
-                   Next State
-                       │
-                 Output + Run Log
-```
-
-## Source of truth
-
-The ALO source and its canonical compiled Graph IR are the machine-readable sources of truth.
-
-A Mermaid diagram is generated output. Editing a diagram must not silently alter executable behavior.
-
-## Provider boundary
-
-The provider answers semantic questions. It does not perform authoritative arithmetic, mutate ALO state, choose undeclared categories, define new workflow nodes at runtime, or silently change thresholds or rules.
-
-The runtime owns deterministic behavior.
-
-## Jev adapter
-
-Jev is an optional adapter.
+## 1. Layered architecture
 
 ```text
-binary       ↔ Noul
-categorical  ↔ Choice
-scalar       ↔ Score
+                  Authoring Layer
+                       │
+                 ALO Prompt / YAML
+                       │
+                       ▼
+              Canonical ALO Model
+       ┌───────────────┼────────────────┐
+       │               │                │
+    mainObj        subObjList          State
+       └───────────────┬────────────────┘
+                       │
+                  managerObj
+                       │
+       ┌───────────────┼──────────────────┐
+       │               │                  │
+ deterministic      LLM work        Jev judgments
+ calculation                           │
+       └───────────────┬──────────────────┘
+                       │
+                 State transition
+                       │
+                     Output
 ```
 
-This mapping keeps ALO files portable to other providers.
+## 2. Derived representations
 
-The repository includes a provisional `JevClient` protocol and `JevProvider`
-adapter boundary. It is intentionally pending real Jev API access and is not
-verified against the Jev service. No live Jev account is required to validate,
-compile, test, or run an ALO with another provider; the Mock and
-OpenAI-compatible providers remain fully sufficient for those workflows.
-
-## Planned packages
+The same canonical ALO model can produce multiple derived artifacts.
 
 ```text
-packages/core       schema + typed IR
-packages/compiler   ALO → Graph IR
-packages/runtime    graph execution + run records
-packages/cli        alo validate/graph/run/test
-packages/providers  provider adapters
-studio              self-hostable visual UI
-conformance         compatibility suite
+Canonical ALO Model
+    ├── canonical prompt
+    ├── ALO diagram / Mermaid
+    ├── execution plan
+    ├── Jev requests
+    ├── run record
+    └── tests
 ```
 
-## Local-first requirement
+No derived artifact is allowed to redefine the core ALO semantics.
 
-A conforming reference implementation should support a path where ALO validation, graph generation, and mock-provider tests work offline, and local model providers can run without a hosted Open ALO service.
+## 3. ALO Diagram
 
-Cloud services may be added as conveniences, never as protocol requirements.
+The diagram compiler MUST first preserve object semantics:
+
+```text
+MAIN_OBJECT
+  └─ CONTAINS → SUB_OBJECT*
+
+MANAGER
+  ├─ COORDINATES → MAIN_OBJECT / SUB_OBJECT*
+  ├─ READS_STATE → STATE
+  ├─ UPDATES_STATE → STATE
+  ├─ RECEIVES ← INPUT
+  └─ EMITS → OUTPUT
+```
+
+Execution details may then be overlaid:
+
+```text
+MANAGER
+  ├─ CALLS → JEV_NOUL
+  ├─ CALLS → JEV_CHOICE
+  ├─ CALLS → JEV_SCORE
+  ├─ CALLS → DETERMINISTIC_CALC
+  └─ CALLS → EXTERNAL_TOOL
+```
+
+## 4. Jev adapter
+
+Jev is an optional execution adapter used by manager operations.
+
+It is not a peer replacement for ALO and not the canonical object model.
+
+Jev results return to `managerObj`, which interprets them under the declared ALO behavior and state-update policy.
+
+## 5. Runtime
+
+The runtime implements manager execution.
+
+Responsibilities:
+
+- load the ALO definition;
+- construct or restore State;
+- render/provide the canonical prompt when an LLM is used;
+- execute manager steps;
+- call Jev or other tools when declared;
+- apply deterministic calculations;
+- apply explicit State transitions;
+- emit output;
+- persist a run trace.
+
+## 6. Existing Draft 0.1 implementation
+
+The current repository contains a working workflow-oriented runtime created from the superseded Draft 0.1 interpretation.
+
+Useful components may be retained:
+
+- YAML loading;
+- schema validation infrastructure;
+- deterministic expression/rule execution;
+- provider adapters;
+- Jev adapter;
+- run records;
+- Mermaid/SVG generation;
+- CLI;
+- Studio;
+- packaging/conformance infrastructure.
+
+However, these components MUST be refactored so the canonical data model preserves:
+
+- `mainObj`;
+- `subObjList`;
+- `State`;
+- `managerObj`.
+
+The current `binary/categorical/scalar + transition_rules` representation may survive only as an execution submodel inside `managerObj`, not as the definition of ALO itself.
