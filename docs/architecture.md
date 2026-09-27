@@ -112,7 +112,10 @@ shape, were kept and now serve the canonical model directly: YAML/JSON
 loading, provider adapters (including the Jev adapter), the deterministic
 expression evaluator (now used for `managerObj.state_updates[].when`),
 Mermaid/SVG generation (which renders any `{nodes, edges}` graph, including
-Object Graph IR), the CLI, Studio, and packaging shells.
+Object Graph IR), the CLI, and packaging shells. A self-hostable web Studio
+was built during this correction and then removed at the maintainer's
+direction -- it was never something the target user (a coding agent working
+in this repository) actually needed; the CLI is the intended interface.
 
 The `binary/categorical/scalar + transition_rules` representation itself
 survives only where it belongs: as one possible execution submodel a

@@ -27,8 +27,14 @@ as a migration path -- it did not represent canonical ALO semantics, and
 keeping it around risked confusing future readers about which model is
 correct. Reusable infrastructure that was already provider-neutral and not
 tied to the workflow-DSL shape (loaders, provider adapters, the Jev adapter,
-the expression evaluator, the CLI/Studio/packaging shells) was kept and is
-now used by the canonical model directly.
+the expression evaluator, the CLI/packaging shells) was kept and is now used
+by the canonical model directly.
+
+A self-hostable web Studio was also built during this correction, then
+removed at the maintainer's explicit direction: it was never something the
+target user (a coding agent working in this repository) needed. The CLI
+(`alo validate/prompt/graph/run/test/package`) is the intended interface,
+so the P4 "self-hostable Studio" item below is marked out of scope.
 
 ## P1 — Reproducible ALO authoring
 
@@ -58,7 +64,7 @@ now used by the canonical model directly.
 ## P4 — Accessibility and ecosystem
 
 - [x] CLI workflows (`alo validate/prompt/graph/run/test` all operate on the canonical model)
-- [x] self-hostable Studio (`/api/prompt`, `/api/graph`, `/api/run` all operate on the canonical model)
+- [~] self-hostable Studio -- out of scope; the CLI is the intended interface for the target user (a coding agent), not a web UI (see the note above)
 - [x] plain-file import/export (pre-existing, client-side; unaffected by this correction)
 - [x] package format (pre-existing `alo package build/install`; verified unchanged against a canonical 0.2 ALO)
 - [x] Git repository install (pre-existing, unaffected)

@@ -104,7 +104,7 @@ alo:
 
 ## 現在の実装について
 
-旧Draft 0.1解釈（確率的ワークフローDSLとしてのALO）に基づくRuntime・Graph・スキーマ・サンプル・適合性フィクスチャは削除済みです（`docs/implementation-correction.md`参照）。Provider・CLI・Studio・パッケージングの各シェルは、Draft 0.1固有ではなかったため、そのままcanonicalモデル向けに再利用しています。
+旧Draft 0.1解釈（確率的ワークフローDSLとしてのALO）に基づくRuntime・Graph・スキーマ・サンプル・適合性フィクスチャは削除済みです（`docs/implementation-correction.md`参照）。Provider・CLI・パッケージングの各シェルは、Draft 0.1固有ではなかったため、そのままcanonicalモデル向けに再利用しています。Web UI（Studio）はユーザーが想定していなかったため削除しました——利用はコーディングエージェントがCLI（`alo validate/prompt/graph/run/test`）を直接使う形を前提とします。
 
 コードが仕様と衝突する場合、`docs/spec.md` を優先し、コードを修正します。
 

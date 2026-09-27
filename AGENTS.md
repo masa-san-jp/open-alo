@@ -158,8 +158,7 @@ provider-neutral, not tied to the workflow-DSL shape):
 - provider adapters, including the Jev adapter (`packages/providers`)
 - the safe expression evaluator, used for `state_updates[].when`
   (`packages/runtime/expressions.py`)
-- the CLI, Studio, and packaging shells (`packages/cli`, `packages/studio`,
-  `packages/packaging`)
+- the CLI and packaging shells (`packages/cli`, `packages/packaging`)
 - Mermaid/SVG rendering (`packages/compiler/mermaid.py`, `svg.py`) --
   reused as-is for Object Graph IR, since both operate generically on any
   `{nodes, edges}` graph
@@ -172,6 +171,13 @@ superseded Draft 0.1 workflow-DSL model, not canonical ALO semantics:
 (`packages/studio/assistant.py`, `/api/assist`) -- authoring an ALO is done
 by the calling agent's own reasoning (see "Writing a new ALO" above), not
 by calling an external LLM API.
+
+Also removed, at the maintainer's explicit direction: the self-hostable web
+Studio (`packages/studio/`, `alo studio`). It was never something the
+target user (a coding agent working in this repository) needed -- the CLI
+is the intended interface. Connecting a declared `calculation.jev` to a
+real Jev account is likewise the responsibility of whoever runs the
+finished ALO, not something this repository verifies.
 
 ## Status
 

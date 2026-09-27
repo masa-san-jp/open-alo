@@ -192,25 +192,6 @@ class OpenAICompatibleProvider:
             )
         return dict(response)
 
-    def complete(self, system_prompt: str, user_prompt: str) -> str:
-        """Return raw free-form text content for a system/user prompt pair.
-
-        Unlike :meth:`binary`/:meth:`categorical`/:meth:`scalar`, this does not
-        parse or normalize the response — it is meant for free-form drafting
-        tasks (see ``packages.studio.assistant``), not typed decisions.
-        """
-
-        payload = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            "temperature": 0,
-        }
-        response = self._call_transport_with_retry(payload)
-        return self._extract_content(response)
-
     def _decode_result(self, response: Mapping[str, Any]) -> dict[str, Any]:
         content = self._extract_content(response)
         try:

@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import webbrowser
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -31,7 +30,6 @@ from packages.packaging import (
 )
 from packages.providers import MockDecisionProvider
 from packages.runtime import ManagerError, run_manager
-from packages.studio import StudioServer
 
 __all__ = ["main"]
 
@@ -128,20 +126,6 @@ def _build_parser() -> argparse.ArgumentParser:
         "manifest_or_alo_path", help="Path to alo-package.json or an ALO YAML/JSON file"
     )
     package_badge_parser.set_defaults(handler=_cmd_package_badge)
-
-    studio_parser = subparsers.add_parser(
-        "studio", help="Launch the local web Studio"
-    )
-    studio_parser.add_argument(
-        "--host", default="127.0.0.1", help="Studio bind host (default: 127.0.0.1)"
-    )
-    studio_parser.add_argument(
-        "--port", type=int, default=0, help="Studio port (default: 0, choose a free port)"
-    )
-    studio_parser.add_argument(
-        "--no-browser", action="store_true", help="Do not open the Studio in a browser"
-    )
-    studio_parser.set_defaults(handler=_cmd_studio)
 
     return parser
 
@@ -340,24 +324,6 @@ def _load_badge_spec_version(path: str) -> str:
     if errors:
         raise PackagingError("invalid package manifest: " + "; ".join(errors))
     return str(value["spec_version"])
-
-
-def _cmd_studio(args: argparse.Namespace) -> int:
-    server = StudioServer(args.host, args.port)
-    host, port = server.server_address[:2]
-    url = f"http://{host}:{port}/"
-    print(f"Studio running at {url} (Ctrl+C to stop)", flush=True)
-    if not args.no_browser:
-        webbrowser.open(url)
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        # shutdown() must be called from another thread while serve_forever is
-        # active; closing the listening socket is the safe CLI-thread cleanup.
-        server.server_close()
-    return 0
 
 
 def _diff_expected(record: Mapping[str, Any], expected: Mapping[str, Any]) -> list[str]:
