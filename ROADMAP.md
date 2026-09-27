@@ -6,17 +6,17 @@ The first implementation pass used a superseded interpretation where ALO was tre
 
 Before further feature work, the implementation must conform to `docs/spec.md` Draft 0.2.
 
-- [ ] schema represents `mainObj`
-- [ ] schema represents `subObjList`
-- [ ] schema represents `State`
-- [ ] schema represents `managerObj`
-- [ ] canonical prompt renderer preserves all four components
-- [ ] Graph IR represents the ALO object model
-- [ ] Mermaid/SVG diagrams show object structure plus execution overlay
-- [ ] runtime executes managerObj semantics
-- [ ] Jev is invoked only as an optional manager calculation/judgment mechanism
-- [ ] conformance tests reject implementations that lose the four core components
-- [ ] minimal example demonstrates Prompt → ALO Diagram → Jev calculation → State update
+- [x] schema represents `mainObj`
+- [x] schema represents `subObjList`
+- [x] schema represents `State`
+- [x] schema represents `managerObj`
+- [x] canonical prompt renderer preserves all four components
+- [x] Graph IR represents the ALO object model
+- [x] Mermaid/SVG diagrams show object structure plus execution overlay
+- [x] runtime executes managerObj semantics
+- [x] Jev is invoked only as an optional manager calculation/judgment mechanism
+- [x] conformance tests reject implementations that lose the four core components
+- [x] minimal example demonstrates Prompt → ALO Diagram → Jev calculation → State update
 
 See: `docs/implementation-correction.md`.
 
