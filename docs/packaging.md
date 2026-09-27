@@ -1,6 +1,6 @@
 # Open ALO packaging
 
-Open ALO Draft 0.1 packages are plain, readable directories intended to remain
+Open ALO packages are plain, readable directories intended to remain
 easy to inspect, diff, fork, and copy. A package contains an
 `alo-package.json` manifest and the ALO document named by its `entry` field.
 
@@ -10,12 +10,16 @@ The manifest has these required fields:
 
 - `name`: an identifier matching `^[A-Za-z][A-Za-z0-9_-]*$`.
 - `version`: a non-empty package version string.
-- `spec_version`: exactly `"0.1"`.
+- `spec_version`: exactly `"0.1"` -- this is the package **manifest format**
+  version, frozen since the packaging shell was first built. It is
+  independent of the ALO document's own `alo.spec_version` (currently
+  `"0.2"`); do not confuse the two.
 - `entry`: a relative path to the package's main ALO YAML or JSON document.
 
 It may also contain non-empty `description` and `homepage` strings. The
 manifest is described by [`schemas/alo-package.schema.json`](../schemas/alo-package.schema.json).
-The referenced ALO document is validated with the normal Draft 0.1 validator.
+The referenced ALO document is validated with the canonical validator
+(`packages.core.validator.validate_alo`).
 
 ## Commands
 

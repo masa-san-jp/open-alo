@@ -1,9 +1,5 @@
 # Conformance fixtures
 
-`cases/` holds the superseded Draft 0.1 workflow-DSL fixtures (kept only for
-migration/testing of that legacy code path -- see AGENTS.md and
-`docs/implementation-correction.md`; not canonical).
-
 `canonical-cases/` holds the canonical Draft 0.2 object-model fixtures
 (mainObj/subObjList/State/managerObj). Per docs/complete-implementation-guide.md
 section 19, a conformant implementation must be unable to lose any of the
