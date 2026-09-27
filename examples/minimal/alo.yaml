@@ -1,0 +1,89 @@
+alo:
+  spec_version: "0.1"
+  id: support-triage
+  version: "0.1.0"
+  purpose: Route a customer support request using explicit probabilistic decisions and deterministic rules.
+
+  inputs:
+    message:
+      type: string
+      required: true
+
+  state_schema:
+    status:
+      type: enum
+      values: [new, routed, review]
+      initial: new
+      updated_by: rule_engine
+    action:
+      type: enum
+      values: [none, escalate, route_technical, route_billing, route_other, human_review]
+      initial: none
+      updated_by: rule_engine
+
+  decisions:
+    - id: is_emergency
+      type: binary
+      reads:
+        - input.message
+      question: Is this request an emergency requiring immediate escalation?
+
+    - id: category
+      type: categorical
+      reads:
+        - input.message
+      question: What is the primary support category?
+      options:
+        technical: Technical problem
+        billing: Billing or payment problem
+        other: Other support request
+
+  thresholds:
+    emergency_accept: 0.90
+    category_accept: 0.70
+
+  transition_rules:
+    - id: emergency
+      priority: 10
+      when: decision.is_emergency.p_true >= threshold.emergency_accept
+      set:
+        status: routed
+        action: escalate
+
+    - id: technical
+      priority: 20
+      when: decision.category.technical >= threshold.category_accept
+      set:
+        status: routed
+        action: route_technical
+
+    - id: billing
+      priority: 30
+      when: decision.category.billing >= threshold.category_accept
+      set:
+        status: routed
+        action: route_billing
+
+    - id: other
+      priority: 40
+      when: decision.category.other >= threshold.category_accept
+      set:
+        status: routed
+        action: route_other
+
+    - id: uncertain
+      priority: 100
+      when: no_previous_rule_matched
+      set:
+        status: review
+        action: human_review
+
+  outputs:
+    action:
+      type: string
+    state:
+      type: object
+
+  stop_conditions:
+    - terminal_state
+    - human_review_required
