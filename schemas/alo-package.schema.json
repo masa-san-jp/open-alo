@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-alo.org/schema/alo-package-0.1.schema.json",
+  "title": "Open ALO Package Manifest Draft 0.1",
+  "description": "Manifest for a readable, Git-friendly Open ALO package.",
+  "type": "object",
+  "required": ["name", "version", "spec_version", "entry"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "spec_version": {
+      "const": "0.1"
+    },
+    "entry": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "homepage": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

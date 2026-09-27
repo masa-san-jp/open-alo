@@ -11,6 +11,16 @@ from typing import Any
 
 from packages.compiler import CompileError, MermaidError, compile_alo, render_mermaid
 from packages.core import LoadError, ValidationError, load_document, validate_alo
+from packages.packaging import (
+    PackagingError,
+    badge_markdown,
+    build_package,
+    install_from_git,
+    load_manifest,
+    load_registry,
+    search_registry,
+    validate_manifest,
+)
 from packages.providers import MockDecisionProvider
 from packages.runtime import run as run_alo
 
@@ -64,6 +74,44 @@ def _build_parser() -> argparse.ArgumentParser:
         "path", help="Directory containing an ALO source file and tests.json"
     )
     test_parser.set_defaults(handler=_cmd_test)
+
+    package_parser = subparsers.add_parser("package", help="Build and inspect ALO packages")
+    package_subparsers = package_parser.add_subparsers(dest="package_command")
+
+    package_build_parser = package_subparsers.add_parser(
+        "build", help="Validate and build a plain-directory ALO package"
+    )
+    package_build_parser.add_argument("source_dir", help="Package source directory")
+    package_build_parser.add_argument(
+        "--out", required=True, help="Directory in which to create the package"
+    )
+    package_build_parser.set_defaults(handler=_cmd_package_build)
+
+    package_install_parser = package_subparsers.add_parser(
+        "install", help="Install an ALO package from a Git repository"
+    )
+    package_install_parser.add_argument("repo_url_or_path", help="Git URL or local repository path")
+    package_install_parser.add_argument(
+        "--dest", required=True, help="Directory in which to install the package"
+    )
+    package_install_parser.add_argument("--ref", default="HEAD", help="Git ref (default: HEAD)")
+    package_install_parser.add_argument("--subdir", help="Package subdirectory within the repository")
+    package_install_parser.set_defaults(handler=_cmd_package_install)
+
+    package_search_parser = package_subparsers.add_parser(
+        "search", help="Search a local/offline registry index"
+    )
+    package_search_parser.add_argument("registry_path", help="Path to a registry JSON file")
+    package_search_parser.add_argument("query", help="Case-insensitive name or description query")
+    package_search_parser.set_defaults(handler=_cmd_package_search)
+
+    package_badge_parser = package_subparsers.add_parser(
+        "badge", help="Generate an Open ALO compatibility badge"
+    )
+    package_badge_parser.add_argument(
+        "manifest_or_alo_path", help="Path to alo-package.json or an ALO YAML/JSON file"
+    )
+    package_badge_parser.set_defaults(handler=_cmd_package_badge)
 
     return parser
 
@@ -174,6 +222,78 @@ def _cmd_test(args: argparse.Namespace) -> int:
     total = len(cases)
     print(f"{total - failures}/{total} passed")
     return 1 if failures else 0
+
+
+def _cmd_package_build(args: argparse.Namespace) -> int:
+    try:
+        package_path = build_package(args.source_dir, args.out)
+    except PackagingError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    print(package_path)
+    return 0
+
+
+def _cmd_package_install(args: argparse.Namespace) -> int:
+    try:
+        package_path = install_from_git(
+            args.repo_url_or_path,
+            args.dest,
+            ref=args.ref,
+            subdir=args.subdir,
+        )
+    except PackagingError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    print(package_path)
+    return 0
+
+
+def _cmd_package_search(args: argparse.Namespace) -> int:
+    try:
+        registry = load_registry(args.registry_path)
+        matches = search_registry(registry, args.query)
+    except PackagingError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    print(json.dumps(matches, ensure_ascii=False, indent=2, sort_keys=True))
+    return 0
+
+
+def _cmd_package_badge(args: argparse.Namespace) -> int:
+    try:
+        spec_version = _load_badge_spec_version(args.manifest_or_alo_path)
+    except (LoadError, PackagingError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    print(badge_markdown(spec_version))
+    return 0
+
+
+def _load_badge_spec_version(path: str) -> str:
+    """Load a spec version from either a package manifest or an ALO document."""
+
+    try:
+        value = load_manifest(path)
+    except PackagingError as manifest_error:
+        try:
+            document = load_document(path)
+        except LoadError:
+            raise manifest_error
+        errors = validate_alo(document)
+        if errors:
+            raise PackagingError("invalid ALO document: " + "; ".join(errors))
+        return str(document["alo"]["spec_version"])
+
+    if "alo" in value:
+        errors = validate_alo(value)
+        if errors:
+            raise PackagingError("invalid ALO document: " + "; ".join(errors))
+        return str(value["alo"]["spec_version"])
+    errors = validate_manifest(value)
+    if errors:
+        raise PackagingError("invalid package manifest: " + "; ".join(errors))
+    return str(value["spec_version"])
 
 
 def _diff_expected(record: Mapping[str, Any], expected: Mapping[str, Any]) -> list[str]:

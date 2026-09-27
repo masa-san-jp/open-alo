@@ -1,6 +1,8 @@
 import contextlib
 import io
 import json
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -91,6 +93,79 @@ class CliTests(unittest.TestCase):
         status, out, _ = self._run([])
         self.assertEqual(status, 1)
         self.assertIn("usage", out.lower())
+
+    def test_package_build_command(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            status, out, err = self._run(
+                ["package", "build", "examples/minimal", "--out", tmp]
+            )
+            self.assertEqual(status, 0, err)
+            package_path = Path(out.strip())
+            self.assertTrue(package_path.is_dir())
+            self.assertEqual(package_path.name, "support-triage-0.1.0")
+
+    def test_package_install_command_uses_local_git_repository(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repository"
+            root.mkdir()
+            for name in ("alo.yaml", "alo-package.json"):
+                shutil.copy(Path("examples/minimal") / name, root / name)
+            subprocess.run(["git", "init", str(root)], check=True, capture_output=True, text=True)
+            subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(root),
+                    "-c",
+                    "user.name=Open ALO Tests",
+                    "-c",
+                    "user.email=tests@example.invalid",
+                    "commit",
+                    "-m",
+                    "package",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            destination = Path(tmp) / "installed"
+            status, out, err = self._run(
+                ["package", "install", str(root), "--dest", str(destination)]
+            )
+            self.assertEqual(status, 0, err)
+            self.assertEqual(Path(out.strip()).name, "support-triage-0.1.0")
+
+    def test_package_search_command(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            registry_path = Path(tmp) / "registry.json"
+            registry_path.write_text(
+                json.dumps(
+                    {
+                        "entries": [
+                            {
+                                "name": "support-triage",
+                                "description": "Route support",
+                                "source": "./support",
+                                "latest_version": "0.1.0",
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            status, out, err = self._run(
+                ["package", "search", str(registry_path), "SUPPORT"]
+            )
+            self.assertEqual(status, 0, err)
+            self.assertEqual(json.loads(out)[0]["name"], "support-triage")
+
+    def test_package_badge_command_accepts_manifest(self):
+        status, out, err = self._run(
+            ["package", "badge", "examples/minimal/alo-package.json"]
+        )
+        self.assertEqual(status, 0, err)
+        self.assertIn("Open%20ALO-0.1-blue", out)
 
 
 if __name__ == "__main__":
