@@ -88,6 +88,12 @@ alo:
       - 出力を生成する
 ```
 
+## 実装エージェント向け最短導線
+
+**最初に読む:** [docs/complete-implementation-guide.md](docs/complete-implementation-guide.md)
+
+この1ファイルだけで、ALOの定義、4要素、ALO Prompt、ALO図、Jevの位置づけ、Runtime、State更新、再現性、旧Draft 0.1の誤り、実装順、完了条件まで把握できるようにしています。
+
 ## 仕様を読む順番
 
 1. [docs/spec.md](docs/spec.md) — **ALOそのもののNormative SSOT**
