@@ -25,12 +25,12 @@
 
 ## Milestone 2 — Reproducibility
 
-- [ ] conformance suite
-- [ ] golden tests
-- [ ] run replay
-- [ ] version pinning
-- [ ] threshold versioning
-- [ ] provider/model metadata capture
+- [x] conformance suite
+- [x] golden tests
+- [x] run replay
+- [x] version pinning
+- [x] threshold versioning
+- [x] provider/model metadata capture
 
 ## Milestone 3 — Accessibility
 

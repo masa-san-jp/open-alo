@@ -49,6 +49,8 @@ def validate_alo(document: Mapping[str, Any]) -> list[str]:
     for field in ("id", "version", "purpose"):
         if field in alo and not _non_empty_string(alo[field]):
             errors.append(f"alo.{field} must be a non-empty string")
+    if "threshold_version" in alo and not _non_empty_string(alo["threshold_version"]):
+        errors.append("alo.threshold_version must be a non-empty string")
     if "id" in alo:
         _identifier(alo["id"], "alo.id", errors)
 

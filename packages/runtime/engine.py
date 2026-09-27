@@ -18,6 +18,7 @@ from typing import Any
 from packages.compiler import compile_alo
 from packages.core import ensure_valid
 
+from . import ENGINE_VERSION
 from .expressions import ExpressionError, evaluate
 
 __all__ = ["ExecutionError", "run"]
@@ -56,10 +57,12 @@ def run(
         "timestamp": timestamp or _now(),
         "alo_id": alo["id"],
         "alo_version": alo["version"],
+        "engine_version": ENGINE_VERSION,
+        "graph_ir_version": graph["graph_ir_version"],
         "provider": getattr(provider, "name", provider.__class__.__name__),
         "provider_model": getattr(provider, "model", None),
         "provider_config": getattr(provider, "config", None),
-        "threshold_version": None,
+        "threshold_version": alo.get("threshold_version"),
         "normalized_input": None,
         "state_before": None,
         "decision_requests": [],
@@ -108,12 +111,9 @@ def run(
         ):
             data = node["data"]
             decision_id = data["name"]
-            reads = {
-                reference: evaluate(reference, context) for reference in data["reads"]
-            }
-            record["decision_requests"].append(
-                {"id": decision_id, "type": data["decision_type"], "reads": reads}
-            )
+            request = _build_decision_request(node, context)
+            reads = request["reads"]
+            record["decision_requests"].append(request)
             if data["decision_type"] == "binary":
                 result = provider.binary(decision_id, reads, data["question"])
             elif data["decision_type"] == "categorical":
@@ -130,59 +130,20 @@ def run(
     record["decision_results"] = decision_results
     context["decision"] = decision_results
 
-    state_after = copy.deepcopy(state)
-    output: dict[str, Any] = {}
-    matched_any = False
-    triggered_stop_condition: str | None = None
-    rule_targets = _rule_targets(graph)
+    try:
+        state_after, output, rule_trace, stop_condition = _evaluate_rules(
+            graph, context
+        )
+    except ExpressionError as error:
+        record["status"] = "error"
+        record["error"] = str(error)
+        return record
 
-    rule_nodes = sorted(
-        _nodes_by_type(graph, "RULE"), key=lambda node: node["data"]["priority"]
-    )
-    for node in rule_nodes:
-        data = node["data"]
-        rule_context = dict(context)
-        rule_context["no_previous_rule_matched"] = not matched_any
-        try:
-            matched = bool(evaluate(data["when"], rule_context))
-        except ExpressionError as error:
-            record["status"] = "error"
-            record["error"] = f"rule.{data['name']}: {error}"
-            return record
-
-        trace_entry: dict[str, Any] = {
-            "id": data["name"],
-            "priority": data["priority"],
-            "matched": matched,
-        }
-        if matched:
-            matched_any = True
-            state_targets, output_targets = rule_targets.get(
-                node["id"], (frozenset(), frozenset())
-            )
-            assignments = {
-                target: value
-                for target, value in data["set"].items()
-                if target in state_targets or target in output_targets
-            }
-            trace_entry["set"] = assignments
-            for target, value in assignments.items():
-                if target in state_targets:
-                    state_after[target] = value
-                if target in output_targets:
-                    output[target] = value
-            triggered_stop_condition = data.get("stop_condition")
-        record["rule_trace"].append(trace_entry)
-        if matched:
-            # First-match-wins: rules are an if/elif/.../else chain ordered by
-            # priority, and `no_previous_rule_matched` is the else branch.
-            # Once a rule matches, lower-priority rules are not evaluated.
-            break
-
+    record["rule_trace"] = rule_trace
     record["state_after"] = state_after
     record["output"] = output
-    if triggered_stop_condition:
-        record["status"] = triggered_stop_condition
+    if stop_condition:
+        record["status"] = stop_condition
     return record
 
 
@@ -241,6 +202,32 @@ def _nodes_by_type(graph: Mapping[str, Any], *types: str) -> list[dict[str, Any]
     return [node for node in graph["nodes"] if node["type"] in types]
 
 
+def _build_decision_requests(
+    graph: Mapping[str, Any], context: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    """Build provider request metadata from a fixed evaluation context."""
+
+    requests: list[dict[str, Any]] = []
+    for node in _nodes_by_type(
+        graph, "DECISION_BINARY", "DECISION_CATEGORICAL", "DECISION_SCALAR"
+    ):
+        requests.append(_build_decision_request(node, context))
+    return requests
+
+
+def _build_decision_request(
+    node: Mapping[str, Any], context: Mapping[str, Any]
+) -> dict[str, Any]:
+    data = node["data"]
+    return {
+        "id": data["name"],
+        "type": data["decision_type"],
+        "reads": {
+            reference: evaluate(reference, context) for reference in data["reads"]
+        },
+    }
+
+
 def _rule_targets(
     graph: Mapping[str, Any],
 ) -> dict[str, tuple[frozenset[str], frozenset[str]]]:
@@ -259,6 +246,61 @@ def _rule_targets(
         )
         for source in sources
     }
+
+
+def _evaluate_rules(
+    graph: Mapping[str, Any], context: Mapping[str, Any]
+) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], str | None]:
+    """Evaluate the fixed decision context using first-match-wins rules."""
+
+    state_after = copy.deepcopy(context["state"])
+    output: dict[str, Any] = {}
+    rule_trace: list[dict[str, Any]] = []
+    matched_any = False
+    triggered_stop_condition: str | None = None
+    rule_targets = _rule_targets(graph)
+
+    rule_nodes = sorted(
+        _nodes_by_type(graph, "RULE"), key=lambda node: node["data"]["priority"]
+    )
+    for node in rule_nodes:
+        data = node["data"]
+        rule_context = dict(context)
+        rule_context["no_previous_rule_matched"] = not matched_any
+        try:
+            matched = bool(evaluate(data["when"], rule_context))
+        except ExpressionError as error:
+            raise ExpressionError(f"rule.{data['name']}: {error}") from error
+
+        trace_entry: dict[str, Any] = {
+            "id": data["name"],
+            "priority": data["priority"],
+            "matched": matched,
+        }
+        if matched:
+            matched_any = True
+            state_targets, output_targets = rule_targets.get(
+                node["id"], (frozenset(), frozenset())
+            )
+            assignments = {
+                target: value
+                for target, value in data["set"].items()
+                if target in state_targets or target in output_targets
+            }
+            trace_entry["set"] = assignments
+            for target, value in assignments.items():
+                if target in state_targets:
+                    state_after[target] = value
+                if target in output_targets:
+                    output[target] = value
+            triggered_stop_condition = data.get("stop_condition")
+        rule_trace.append(trace_entry)
+        if matched:
+            # First-match-wins: rules are an if/elif/.../else chain ordered by
+            # priority, and `no_previous_rule_matched` is the else branch.
+            break
+
+    return state_after, output, rule_trace, triggered_stop_condition
 
 
 def _now() -> str:

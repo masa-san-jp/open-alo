@@ -11,6 +11,19 @@ class ValidatorTests(unittest.TestCase):
         self.assertEqual(validate_alo(MINIMAL_ALO), [])
         ensure_valid(MINIMAL_ALO)  # must not raise
 
+    def test_accepts_threshold_version(self):
+        document = copy.deepcopy(MINIMAL_ALO)
+        document["alo"]["threshold_version"] = "2026-01-01"
+        self.assertEqual(validate_alo(document), [])
+
+    def test_rejects_empty_threshold_version(self):
+        document = copy.deepcopy(MINIMAL_ALO)
+        document["alo"]["threshold_version"] = ""
+        self.assertIn(
+            "alo.threshold_version must be a non-empty string",
+            validate_alo(document),
+        )
+
     def test_rejects_missing_required_field(self):
         document = copy.deepcopy(MINIMAL_ALO)
         del document["alo"]["purpose"]
