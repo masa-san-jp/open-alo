@@ -23,13 +23,9 @@ Please preserve these invariants:
 
 ## Specification changes
 
-Substantial specification changes should eventually use an ALO Enhancement Proposal (AEP) process. Until that process is implemented, use GitHub issues and clearly mark:
-
-- problem;
-- proposed change;
-- alternatives;
-- backward compatibility;
-- test/conformance impact.
+Substantial specification changes use the ALO Enhancement Proposal (AEP)
+process defined in [`docs/aep-process.md`](docs/aep-process.md). Start from
+[`aeps/0000-template.md`](aeps/0000-template.md).
 
 ## Development status
 

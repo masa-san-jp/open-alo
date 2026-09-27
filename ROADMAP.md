@@ -45,5 +45,5 @@
 - [ ] ALO package format
 - [ ] Git repository install
 - [ ] optional registry/discovery protocol
-- [ ] AEP governance process
+- [x] AEP governance process
 - [ ] compatibility badges
