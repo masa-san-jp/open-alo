@@ -1,50 +1,9 @@
-# Minimal example: support triage
+# Minimal example — LEGACY Draft 0.1 workflow example
 
-This example demonstrates the smallest useful Open ALO workflow:
+> **Warning:** This directory demonstrates the superseded Draft 0.1 workflow representation. It is retained temporarily for migration/testing of existing infrastructure.
+>
+> It is **not** the canonical minimal ALO.
+>
+> For canonical ALO semantics, use [../canonical-minimal/](../canonical-minimal/) and read [../../docs/spec.md](../../docs/spec.md).
 
-1. accept one text input;
-2. ask two semantic questions;
-3. keep uncertainty as probabilities;
-4. apply deterministic thresholds and routing rules;
-5. emit an action and next state.
-
-## Source
-
-See `alo.yaml`.
-
-## Example input
-
-```json
-{
-  "message": "Our production system is down and nobody can log in."
-}
-```
-
-## Expected graph shape
-
-```mermaid
-flowchart TD
-    I[message<br/>INPUT]
-    E[is_emergency<br/>DECISION_BINARY]
-    C[category<br/>DECISION_CATEGORICAL]
-    R[route<br/>RULES]
-    S[next_state<br/>STATE]
-    O[action<br/>OUTPUT]
-
-    I --> E
-    I --> C
-    E --> R
-    C --> R
-    R --> S
-    S --> O
-```
-
-The Mermaid block above is documentation only. Once the compiler exists, diagrams MUST be generated from canonical Graph IR rather than maintained by hand.
-
-## Intended commands
-
-```bash
-alo validate alo.yaml
-alo graph alo.yaml
-alo run alo.yaml --input input.json
-```
+The Draft 0.1 example models probabilistic decisions and deterministic routing. Those mechanisms may later be embedded inside `managerObj`, but they do not themselves represent the complete `mainObj / subObjList / State / managerObj` model.
