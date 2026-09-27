@@ -48,6 +48,18 @@ class CanonicalValidatorTests(unittest.TestCase):
         self.assertIn("alo.State is required", errors)
         self.assertIn("alo.managerObj is required", errors)
 
+    def test_accepts_optional_main_and_sub_obj_versions(self):
+        document = copy.deepcopy(CANONICAL_MINIMAL)
+        document["alo"]["mainObj"]["version"] = "1.2.0"
+        document["alo"]["subObjList"][0]["version"] = "0.3.0"
+        self.assertEqual(validate_alo(document), [])
+
+    def test_rejects_empty_main_obj_version(self):
+        document = copy.deepcopy(CANONICAL_MINIMAL)
+        document["alo"]["mainObj"]["version"] = ""
+        errors = validate_alo(document)
+        self.assertIn("alo.mainObj.version must be a non-empty string", errors)
+
     def test_rejects_duplicate_sub_obj_id(self):
         document = copy.deepcopy(CANONICAL_MINIMAL)
         document["alo"]["subObjList"].append(

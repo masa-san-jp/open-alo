@@ -64,6 +64,8 @@ def _validate_canonical_object_model(alo: Mapping[str, Any]) -> list[str]:
         _identifier(main_obj.get("id"), "alo.mainObj.id", errors)
         if not _non_empty_string(main_obj.get("purpose")):
             errors.append("alo.mainObj.purpose must be a non-empty string")
+        if "version" in main_obj and not _non_empty_string(main_obj["version"]):
+            errors.append("alo.mainObj.version must be a non-empty string")
         _responsibilities(
             main_obj.get("responsibilities"), "alo.mainObj.responsibilities", errors
         )
@@ -83,6 +85,8 @@ def _validate_canonical_object_model(alo: Mapping[str, Any]) -> list[str]:
             sub_obj_ids.add(sub_obj_id)
         if not _non_empty_string(sub_obj.get("purpose")):
             errors.append(f"{path}.purpose must be a non-empty string")
+        if "version" in sub_obj and not _non_empty_string(sub_obj["version"]):
+            errors.append(f"{path}.version must be a non-empty string")
         _responsibilities(sub_obj.get("responsibilities"), f"{path}.responsibilities", errors)
 
     state = _object(alo.get("State"), "alo.State", errors)

@@ -45,7 +45,7 @@ These components should be migrated rather than discarded where practical.
 - [x] natural-language authoring template (docs/spec.md section 5; rendered by `render_prompt`)
 - [x] structured YAML/JSON serialization (`schemas/alo-0.2.schema.json`, `examples/canonical-minimal/`)
 - [x] deterministic canonical prompt rendering (`render_prompt`; tested deterministic)
-- [ ] versioned object definitions (only `alo.canonical_hash` + `alo.id`/`version` today; no per-subObj versioning)
+- [x] versioned object definitions (optional `version` on `mainObj`/each `subObjList` entry; recorded in the Run Record's `alo.object_versions` and in Object Graph IR node data)
 - [x] explicit dynamic sub-object creation records (`creates_sub_obj` step field -> `dynamic_sub_obj_creations` in the Run Record; never silently mutates `alo.subObjList`)
 
 ## P2 — ALO visualization

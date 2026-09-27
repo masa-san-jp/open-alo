@@ -87,7 +87,8 @@
         "responsibilities": [
           "学習状態を維持する",
           "subObjListを統合して支援を行う"
-        ]
+        ],
+        "version": null
       },
       "id": "main.learning_coach",
       "type": "MAIN_OBJECT"
@@ -156,7 +157,8 @@
         "id": "comprehension_analyzer",
         "name": "Comprehension Analyzer",
         "purpose": "学習者の回答から対象概念の理解状況を評価する",
-        "responsibilities": []
+        "responsibilities": [],
+        "version": null
       },
       "id": "sub.comprehension_analyzer",
       "type": "SUB_OBJECT"
@@ -166,7 +168,8 @@
         "id": "explanation_engine",
         "name": "Explanation Engine",
         "purpose": "現在Stateに適した説明を生成する",
-        "responsibilities": []
+        "responsibilities": [],
+        "version": null
       },
       "id": "sub.explanation_engine",
       "type": "SUB_OBJECT"

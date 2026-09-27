@@ -211,6 +211,24 @@ class ManagerRuntimeTests(unittest.TestCase):
         self.assertEqual(record["status"], "error")
         self.assertIn("already exists", record["error"])
 
+    def test_declared_object_versions_are_recorded(self):
+        document = copy.deepcopy(CANONICAL_MINIMAL)
+        document["alo"]["mainObj"]["version"] = "1.2.0"
+        document["alo"]["subObjList"][0]["version"] = "0.3.0"
+        record = run_manager(document, {"user_message": "hi"}, MockDecisionProvider({}))
+
+        self.assertEqual(
+            record["alo"]["object_versions"],
+            {
+                "main.learning_coach": "1.2.0",
+                "sub.comprehension_analyzer": "0.3.0",
+            },
+        )
+
+    def test_object_versions_is_empty_when_not_declared(self):
+        record = run_manager(CANONICAL_MINIMAL, {"user_message": "hi"}, MockDecisionProvider({}))
+        self.assertEqual(record["alo"]["object_versions"], {})
+
     def test_canonical_hash_is_deterministic(self):
         record_a = run_manager(CANONICAL_MINIMAL, {"user_message": "hello"})
         record_b = run_manager(copy.deepcopy(CANONICAL_MINIMAL), {"user_message": "hello"})

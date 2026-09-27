@@ -57,6 +57,13 @@ class ObjectGraphTests(unittest.TestCase):
         self.assertEqual(calc_nodes[0]["type"], "JEV_NOUL")
         self.assertIn("question", calc_nodes[0]["data"])
 
+    def test_records_declared_object_versions(self):
+        document = copy.deepcopy(CANONICAL_MINIMAL)
+        document["alo"]["mainObj"]["version"] = "1.2.0"
+        graph = compile_object_graph(document)
+        main_node = next(node for node in graph["nodes"] if node["type"] == "MAIN_OBJECT")
+        self.assertEqual(main_node["data"]["version"], "1.2.0")
+
     def test_output_is_deterministic(self):
         first = compile_object_graph(CANONICAL_MINIMAL)
         second = compile_object_graph(copy.deepcopy(CANONICAL_MINIMAL))

@@ -30,6 +30,7 @@
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
         "name": {"$ref": "#/$defs/nonEmptyString"},
+        "version": {"$ref": "#/$defs/nonEmptyString"},
         "purpose": {"$ref": "#/$defs/nonEmptyString"},
         "responsibilities": {"$ref": "#/$defs/responsibilities"}
       }
@@ -41,6 +42,7 @@
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
         "name": {"$ref": "#/$defs/nonEmptyString"},
+        "version": {"$ref": "#/$defs/nonEmptyString"},
         "purpose": {"$ref": "#/$defs/nonEmptyString"},
         "responsibilities": {"$ref": "#/$defs/responsibilities"}
       }

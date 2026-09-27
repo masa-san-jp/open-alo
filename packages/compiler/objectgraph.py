@@ -73,6 +73,7 @@ def compile_object_graph(document: Mapping[str, Any]) -> dict[str, Any]:
         {
             "id": main_obj.get("id"),
             "name": main_obj.get("name"),
+            "version": main_obj.get("version"),
             "purpose": main_obj.get("purpose"),
             "responsibilities": list(main_obj.get("responsibilities", [])),
         },
@@ -95,6 +96,7 @@ def compile_object_graph(document: Mapping[str, Any]) -> dict[str, Any]:
             {
                 "id": sub_obj.get("id"),
                 "name": sub_obj.get("name"),
+                "version": sub_obj.get("version"),
                 "purpose": sub_obj.get("purpose"),
                 "responsibilities": list(sub_obj.get("responsibilities", [])),
             },

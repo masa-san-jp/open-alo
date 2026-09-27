@@ -74,6 +74,7 @@ def run_manager(
             "id": alo.get("id"),
             "version": alo.get("version"),
             "canonical_hash": _canonical_hash(document),
+            "object_versions": _object_versions(alo),
         },
         "input": None,
         "State_before": None,
@@ -318,6 +319,25 @@ def _string_list(value: Any) -> list[str]:
 
 def _field(value: Any) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
+
+
+def _object_versions(alo: Mapping[str, Any]) -> dict[str, str]:
+    """Collect declared per-object versions (mainObj and each subObj), if any.
+
+    Each of mainObj/subObjList entries may declare its own optional
+    `version`, independent of the ALO's own top-level `version` -- so an
+    object's definition can be versioned/tracked separately from the
+    workflow that uses it (P1: "versioned object definitions").
+    """
+
+    versions: dict[str, str] = {}
+    main_obj = alo.get("mainObj")
+    if isinstance(main_obj, Mapping) and isinstance(main_obj.get("version"), str):
+        versions[f"main.{main_obj.get('id')}"] = main_obj["version"]
+    for sub_obj in alo.get("subObjList", []):
+        if isinstance(sub_obj, Mapping) and isinstance(sub_obj.get("version"), str):
+            versions[f"sub.{sub_obj.get('id')}"] = sub_obj["version"]
+    return versions
 
 
 def _canonical_hash(document: Mapping[str, Any]) -> str:
