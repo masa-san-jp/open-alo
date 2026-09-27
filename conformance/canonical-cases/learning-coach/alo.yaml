@@ -1,0 +1,59 @@
+alo:
+  spec_version: "0.2"
+  id: learning-coach
+  version: "0.1.0"
+
+  mainObj:
+    id: learning_coach
+    name: Programming Learning Coach
+    purpose: >
+      学習者との対話を通じて理解状態を保持し、
+      状態に応じて次の学習支援を行う。
+    responsibilities:
+      - 学習状態を維持する
+      - subObjListを統合して支援を行う
+
+  subObjList:
+    - id: comprehension_analyzer
+      name: Comprehension Analyzer
+      purpose: 学習者の回答から対象概念の理解状況を評価する
+
+    - id: explanation_engine
+      name: Explanation Engine
+      purpose: 現在Stateに適した説明を生成する
+
+  State:
+    level:
+      type: integer
+      value: 1
+    progress:
+      type: number
+      value: 0.0
+    memory:
+      type: list
+      value: []
+    activeStatus:
+      type: string
+      value: initializing
+
+  managerObj:
+    id: learning_coach_manager
+    input:
+      - user_message
+    process:
+      - id: read_input
+        action: ユーザー入力と現在Stateを読む
+      - id: analyze_comprehension
+        action: comprehension_analyzerを使って理解状況を評価する
+        calculation:
+          provider: optional
+          jev:
+            type: Noul
+            question: 学習者は対象概念を実質的に理解しているか
+      - id: update_state
+        action: 評価結果と宣言された更新規則に基づいてStateを更新する
+      - id: generate_explanation
+        action: explanation_engineを使って現在Stateに適した応答を生成する
+    output:
+      - response
+      - State

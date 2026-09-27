@@ -1,0 +1,181 @@
+{
+  "edges": [
+    {
+      "from": "input",
+      "id": "receives:input->manager.learning_coach_manager",
+      "to": "manager.learning_coach_manager",
+      "type": "RECEIVES"
+    },
+    {
+      "from": "main.learning_coach",
+      "id": "contains:main.learning_coach->sub.comprehension_analyzer",
+      "to": "sub.comprehension_analyzer",
+      "type": "CONTAINS"
+    },
+    {
+      "from": "main.learning_coach",
+      "id": "contains:main.learning_coach->sub.explanation_engine",
+      "to": "sub.explanation_engine",
+      "type": "CONTAINS"
+    },
+    {
+      "from": "manager.learning_coach_manager",
+      "id": "calculates:manager.learning_coach_manager->calc.analyze_comprehension",
+      "to": "calc.analyze_comprehension",
+      "type": "CALCULATES"
+    },
+    {
+      "from": "manager.learning_coach_manager",
+      "id": "coordinates:manager.learning_coach_manager->main.learning_coach",
+      "to": "main.learning_coach",
+      "type": "COORDINATES"
+    },
+    {
+      "from": "manager.learning_coach_manager",
+      "id": "emits:manager.learning_coach_manager->output",
+      "to": "output",
+      "type": "EMITS"
+    },
+    {
+      "from": "manager.learning_coach_manager",
+      "id": "updates_state:manager.learning_coach_manager->state",
+      "to": "state",
+      "type": "UPDATES_STATE"
+    },
+    {
+      "from": "manager.learning_coach_manager",
+      "id": "coordinates:manager.learning_coach_manager->sub.comprehension_analyzer",
+      "to": "sub.comprehension_analyzer",
+      "type": "COORDINATES"
+    },
+    {
+      "from": "manager.learning_coach_manager",
+      "id": "coordinates:manager.learning_coach_manager->sub.explanation_engine",
+      "to": "sub.explanation_engine",
+      "type": "COORDINATES"
+    },
+    {
+      "from": "state",
+      "id": "reads_state:state->manager.learning_coach_manager",
+      "to": "manager.learning_coach_manager",
+      "type": "READS_STATE"
+    }
+  ],
+  "nodes": [
+    {
+      "data": {
+        "question": "学習者は対象概念を実質的に理解しているか",
+        "step_id": "analyze_comprehension"
+      },
+      "id": "calc.analyze_comprehension",
+      "type": "JEV_NOUL"
+    },
+    {
+      "data": {
+        "fields": [
+          "user_message"
+        ]
+      },
+      "id": "input",
+      "type": "INPUT"
+    },
+    {
+      "data": {
+        "id": "learning_coach",
+        "name": "Programming Learning Coach",
+        "purpose": "学習者との対話を通じて理解状態を保持し、 状態に応じて次の学習支援を行う。\n",
+        "responsibilities": [
+          "学習状態を維持する",
+          "subObjListを統合して支援を行う"
+        ]
+      },
+      "id": "main.learning_coach",
+      "type": "MAIN_OBJECT"
+    },
+    {
+      "data": {
+        "id": "learning_coach_manager",
+        "process": [
+          {
+            "action": "ユーザー入力と現在Stateを読む",
+            "id": "read_input"
+          },
+          {
+            "action": "comprehension_analyzerを使って理解状況を評価する",
+            "id": "analyze_comprehension"
+          },
+          {
+            "action": "評価結果と宣言された更新規則に基づいてStateを更新する",
+            "id": "update_state"
+          },
+          {
+            "action": "explanation_engineを使って現在Stateに適した応答を生成する",
+            "id": "generate_explanation"
+          }
+        ]
+      },
+      "id": "manager.learning_coach_manager",
+      "type": "MANAGER"
+    },
+    {
+      "data": {
+        "fields": [
+          "response",
+          "State"
+        ]
+      },
+      "id": "output",
+      "type": "OUTPUT"
+    },
+    {
+      "data": {
+        "fields": {
+          "activeStatus": {
+            "type": "string",
+            "value": "initializing"
+          },
+          "level": {
+            "type": "integer",
+            "value": 1
+          },
+          "memory": {
+            "type": "list",
+            "value": []
+          },
+          "progress": {
+            "type": "number",
+            "value": 0.0
+          }
+        }
+      },
+      "id": "state",
+      "type": "STATE"
+    },
+    {
+      "data": {
+        "id": "comprehension_analyzer",
+        "name": "Comprehension Analyzer",
+        "purpose": "学習者の回答から対象概念の理解状況を評価する",
+        "responsibilities": []
+      },
+      "id": "sub.comprehension_analyzer",
+      "type": "SUB_OBJECT"
+    },
+    {
+      "data": {
+        "id": "explanation_engine",
+        "name": "Explanation Engine",
+        "purpose": "現在Stateに適した説明を生成する",
+        "responsibilities": []
+      },
+      "id": "sub.explanation_engine",
+      "type": "SUB_OBJECT"
+    }
+  ],
+  "object_graph_ir_version": "0.2",
+  "source": {
+    "alo_id": "learning-coach",
+    "alo_version": "0.1.0",
+    "spec_version": "0.2"
+  }
+}
