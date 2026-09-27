@@ -6,6 +6,9 @@ import copy
 from collections.abc import Mapping
 from typing import Any
 
+from .capabilities import ProviderCapabilities
+from .normalize import normalize_binary, normalize_categorical, normalize_scalar
+
 
 class MockDecisionProvider:
     """Return configured responses, with neutral deterministic fallbacks.
@@ -18,6 +21,9 @@ class MockDecisionProvider:
 
     name = "mock"
     model = "deterministic"
+    capabilities = ProviderCapabilities(
+        decision_types=frozenset({"binary", "categorical", "scalar"})
+    )
 
     def __init__(self, responses: Mapping[str, Any] | None = None):
         self.responses = copy.deepcopy(dict(responses or {}))
@@ -32,7 +38,7 @@ class MockDecisionProvider:
             response = {}
         p_true = float(response.get("p_true", 0.5))
         p_false = float(response.get("p_false", 1.0 - p_true))
-        return _normalize_binary(p_true, p_false)
+        return normalize_binary(p_true, p_false)
 
     def categorical(
         self,
@@ -47,7 +53,7 @@ class MockDecisionProvider:
         probabilities = {option: float(response.get(option, 0.0)) for option in options}
         if sum(probabilities.values()) <= 0:
             probabilities = {option: 1.0 for option in options}
-        return _normalize(probabilities)
+        return normalize_categorical(probabilities)
 
     def scalar(
         self,
@@ -63,21 +69,11 @@ class MockDecisionProvider:
         maximum = float(scale.get("max", 1))
         score = float(response.get("score", (minimum + maximum) / 2))
         confidence = float(response.get("confidence", 1.0))
-        if score < minimum or score > maximum:
-            raise ValueError(f"mock scalar score outside scale for {decision_id}")
-        if not 0 <= confidence <= 1:
-            raise ValueError(f"mock scalar confidence must be between 0 and 1 for {decision_id}")
-        return {"score": score, "confidence": confidence}
-
-
-def _normalize_binary(p_true: float, p_false: float) -> dict[str, float]:
-    return _normalize({"p_true": p_true, "p_false": p_false})
-
-
-def _normalize(values: Mapping[str, float]) -> dict[str, float]:
-    if any(value < 0 for value in values.values()):
-        raise ValueError("probabilities cannot be negative")
-    total = sum(values.values())
-    if total <= 0:
-        raise ValueError("probabilities must have a positive total")
-    return {key: value / total for key, value in values.items()}
+        try:
+            return normalize_scalar(score, confidence, scale)
+        except ValueError as error:
+            if score < minimum or score > maximum:
+                raise ValueError(f"mock scalar score outside scale for {decision_id}") from error
+            raise ValueError(
+                f"mock scalar confidence must be between 0 and 1 for {decision_id}"
+            ) from error
