@@ -1,5 +1,7 @@
 # AGENTS.md — Open ALO implementation instructions
 
+**Mandatory first read:** `docs/complete-implementation-guide.md`
+
 ## Read this before changing code
 
 Open ALO is currently correcting a semantic mistake introduced in Draft 0.1.
