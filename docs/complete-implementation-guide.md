@@ -853,3 +853,129 @@ Core implementation is complete only when a new user can:
 # 22. One-sentence definition
 
 > **ALO is a language-defined object model composed of mainObj, subObjList, State, and managerObj; Open ALO makes that model writable, visualizable, executable, reproducible, and optionally calculable with Jev.**
+
+
+# 23. Original ALO behavior that must not be lost
+
+The four-component model is the structure of ALO, but the following runtime behavior is also part of the concept and must remain implementable.
+
+## 23.1 Per-input manager loop
+
+For every input, managerObj must be capable of:
+
+1. interpreting the input;
+2. reading current State;
+3. selecting relevant sub-objects;
+4. analyzing context and meaning;
+5. performing judgments/calculations/tools as needed;
+6. determining State changes;
+7. updating State;
+8. generating the response/action;
+9. exposing State/trace when configured.
+
+Do not reduce this loop to Jev calls only.
+
+## 23.2 Initial State and startup output
+
+An ALO may define:
+
+- initial State;
+- startup/initial output;
+- an initial greeting;
+- an initial question;
+- initial simulation setup.
+
+These are managerObj behaviors and must be representable.
+
+## 23.3 State dashboard
+
+The original prompt style may display a State dashboard at the end of each turn.
+
+Open ALO must support this as an output/view policy.
+
+The dashboard is generated from State. It is not the source of truth.
+
+## 23.4 Dynamic subObj creation
+
+The original ALO approach may add sub-objects dynamically when needed.
+
+Open ALO must preserve that capability.
+
+In reproducibility mode, creation must be logged explicitly rather than happening invisibly.
+
+## 23.5 Language-defined behavior remains valid
+
+Not every manager behavior needs to become a rule or typed decision.
+
+Examples that may remain language-defined:
+
+- interpret user intent;
+- generate an explanation;
+- simulate a role;
+- synthesize a response;
+- decide which sub-object is relevant;
+- reason over object relationships.
+
+Jev and deterministic code are execution aids. They do not replace language-defined behavior.
+
+# 24. Interactive vs reproducible execution
+
+Open ALO supports two compatible execution styles.
+
+## Interactive
+
+Prioritizes flexible LLM behavior.
+
+```text
+Input
+  ↓
+managerObj + language-defined behavior
+  ↓
+State update
+  ↓
+Output
+```
+
+## Reproducible
+
+Makes the same process inspectable.
+
+```text
+Input
+  ↓
+record State_before
+  ↓
+managerObj steps
+  ├── LLM judgment
+  ├── Jev judgment
+  ├── deterministic calculation
+  └── external tool
+  ↓
+record proposed/applied State updates
+  ↓
+State_after
+  ↓
+Output + trace
+```
+
+Reproducibility is an execution discipline layered on ALO. It must not redefine ALO into a narrower workflow DSL.
+
+# 25. What an implementation agent must understand before coding
+
+An agent has understood Open ALO only if it can explain all of the following correctly:
+
+- ALO is a language-object model, not a Jev workflow.
+- mainObj represents the whole modeled concept/system.
+- subObjList represents conceptual child objects/capabilities.
+- State is explicit mutable runtime state.
+- managerObj interprets input and coordinates behavior.
+- ALO Prompt is a first-class representation.
+- YAML/JSON is a serializable representation of the same semantics.
+- ALO Diagram visualizes the object model first, execution details second.
+- Jev is optional and called from managerObj for suitable probabilistic judgments.
+- deterministic code handles deterministic operations where appropriate.
+- initial State/startup output can be declared.
+- State dashboards are views, not State itself.
+- dynamic subObj creation is allowed but must be recorded in reproducibility mode.
+- language-defined behavior may remain language-defined.
+- reproducibility records execution; it does not narrow the conceptual model.
