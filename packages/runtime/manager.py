@@ -81,6 +81,7 @@ def run_manager(
         "jev_calls": [],
         "deterministic_calculations": [],
         "state_updates": [],
+        "dynamic_sub_obj_creations": [],
         "State_after": None,
         "output": None,
         "status": "ok",
@@ -103,6 +104,12 @@ def run_manager(
     process = manager_obj.get("process", [])
     if not isinstance(process, Sequence) or isinstance(process, (str, bytes, bytearray)):
         raise ManagerError("alo.managerObj.process must be an array")
+
+    known_sub_obj_ids = {
+        sub_obj.get("id")
+        for sub_obj in alo.get("subObjList", [])
+        if isinstance(sub_obj, Mapping)
+    }
 
     for raw_step in process:
         if not isinstance(raw_step, Mapping):
@@ -127,6 +134,19 @@ def run_manager(
                 context["jev"][step_id] = result
         else:
             trace_entry["kind"] = "language_defined"
+
+        creates_sub_obj = raw_step.get("creates_sub_obj")
+        if isinstance(creates_sub_obj, Mapping):
+            try:
+                creation = _record_dynamic_sub_obj_creation(
+                    creates_sub_obj, step_id, known_sub_obj_ids, record
+                )
+            except ManagerError as error:
+                record["status"] = "error"
+                record["error"] = str(error)
+                return record
+            known_sub_obj_ids.add(creation["id"])
+            trace_entry["creates_sub_obj"] = creation["id"]
 
         step_updates = raw_step.get("state_updates")
         if step_updates is not None:
@@ -199,6 +219,51 @@ def _run_calculation(
     record["jev_calls"][-1]["model"] = getattr(provider, "model", None)
     record["jev_calls"][-1]["provider"] = getattr(provider, "name", provider.__class__.__name__)
     return result
+
+
+def _record_dynamic_sub_obj_creation(
+    creates_sub_obj: Mapping[str, Any],
+    step_id: Any,
+    known_sub_obj_ids: set[Any],
+    record: dict[str, Any],
+) -> dict[str, Any]:
+    """Log an explicit, reproducible dynamic sub-object creation.
+
+    Per docs/complete-implementation-guide.md section 11: "this cannot
+    happen silently" -- a creation record must include the new object id,
+    its parent, the creation reason, its complete definition, the run id,
+    and a timestamp. This never mutates alo.subObjList; it is a run-scoped
+    record only (the static ALO document is not rewritten mid-run).
+    """
+
+    new_id = creates_sub_obj.get("id")
+    if not isinstance(new_id, str) or not new_id:
+        raise ManagerError(
+            f"managerObj.process[{step_id}].creates_sub_obj.id must be a non-empty string"
+        )
+    if new_id in known_sub_obj_ids:
+        raise ManagerError(
+            f"managerObj.process[{step_id}].creates_sub_obj.id already exists: {new_id}"
+        )
+    reason = creates_sub_obj.get("reason")
+    if not isinstance(reason, str) or not reason:
+        raise ManagerError(
+            f"managerObj.process[{step_id}].creates_sub_obj.reason must be a non-empty string"
+        )
+
+    creation = {
+        "id": new_id,
+        "parent": creates_sub_obj.get("parent"),
+        "reason": reason,
+        "definition": {
+            key: value for key, value in creates_sub_obj.items() if key != "reason"
+        },
+        "created_by_step": step_id,
+        "run_id": record["run_id"],
+        "timestamp": record["timestamp"],
+    }
+    record["dynamic_sub_obj_creations"].append(creation)
+    return creation
 
 
 def _apply_state_updates(

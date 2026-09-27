@@ -180,6 +180,37 @@ class ManagerRuntimeTests(unittest.TestCase):
             record["manager_trace"][1]["subObj_used"], "comprehension_analyzer"
         )
 
+    def test_dynamic_sub_obj_creation_is_recorded_explicitly(self):
+        document = copy.deepcopy(CANONICAL_MINIMAL)
+        document["alo"]["managerObj"]["process"][0]["creates_sub_obj"] = {
+            "id": "motivation_tracker",
+            "parent": "learning_coach",
+            "purpose": "Track learner motivation over time.",
+            "reason": "Learner showed signs of frustration.",
+        }
+        record = run_manager(document, {"user_message": "hi"}, MockDecisionProvider({}))
+
+        self.assertEqual(record["status"], "ok")
+        self.assertEqual(len(record["dynamic_sub_obj_creations"]), 1)
+        creation = record["dynamic_sub_obj_creations"][0]
+        self.assertEqual(creation["id"], "motivation_tracker")
+        self.assertEqual(creation["parent"], "learning_coach")
+        self.assertEqual(creation["reason"], "Learner showed signs of frustration.")
+        self.assertEqual(creation["run_id"], record["run_id"])
+        self.assertEqual(record["manager_trace"][0]["creates_sub_obj"], "motivation_tracker")
+
+    def test_dynamic_sub_obj_creation_rejects_duplicate_id(self):
+        document = copy.deepcopy(CANONICAL_MINIMAL)
+        document["alo"]["managerObj"]["process"][0]["creates_sub_obj"] = {
+            "id": "comprehension_analyzer",
+            "parent": "learning_coach",
+            "reason": "duplicate on purpose",
+        }
+        record = run_manager(document, {"user_message": "hi"}, MockDecisionProvider({}))
+
+        self.assertEqual(record["status"], "error")
+        self.assertIn("already exists", record["error"])
+
     def test_canonical_hash_is_deterministic(self):
         record_a = run_manager(CANONICAL_MINIMAL, {"user_message": "hello"})
         record_b = run_manager(copy.deepcopy(CANONICAL_MINIMAL), {"user_message": "hello"})

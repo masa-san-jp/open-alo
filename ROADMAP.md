@@ -42,35 +42,35 @@ These components should be migrated rather than discarded where practical.
 
 ## P1 — Reproducible ALO authoring
 
-- [ ] natural-language authoring template
-- [ ] structured YAML/JSON serialization
-- [ ] deterministic canonical prompt rendering
-- [ ] versioned object definitions
-- [ ] explicit dynamic sub-object creation records
+- [x] natural-language authoring template (docs/spec.md section 5; rendered by `render_prompt`)
+- [x] structured YAML/JSON serialization (`schemas/alo-0.2.schema.json`, `examples/canonical-minimal/`)
+- [x] deterministic canonical prompt rendering (`render_prompt`; tested deterministic)
+- [ ] versioned object definitions (only `alo.canonical_hash` + `alo.id`/`version` today; no per-subObj versioning)
+- [x] explicit dynamic sub-object creation records (`creates_sub_obj` step field -> `dynamic_sub_obj_creations` in the Run Record; never silently mutates `alo.subObjList`)
 
 ## P2 — ALO visualization
 
-- [ ] object-structure diagram
-- [ ] state relationships
-- [ ] manager flow
-- [ ] optional execution/Jev overlay
-- [ ] stable Mermaid and SVG output
+- [x] object-structure diagram (`compile_object_graph`: MAIN_OBJECT/SUB_OBJECT/STATE/MANAGER/INPUT/OUTPUT)
+- [x] state relationships (READS_STATE/UPDATES_STATE edges)
+- [x] manager flow (RECEIVES/COORDINATES/EMITS edges, `manager_trace`)
+- [x] optional execution/Jev overlay (JEV_NOUL/JEV_CHOICE/JEV_SCORE nodes, CALCULATES edges)
+- [x] stable Mermaid and SVG output (deterministic; tested)
 
 ## P3 — Jev calculation
 
-- [ ] manager operation → Noul
-- [ ] manager operation → Choice
-- [ ] manager operation → Score
-- [ ] normalized result recording
-- [ ] deterministic update rules
-- [ ] offline/mock equivalent for testing
+- [x] manager operation → Noul
+- [x] manager operation → Choice
+- [x] manager operation → Score
+- [x] normalized result recording (via the existing `normalize_binary/categorical/scalar`, unchanged)
+- [x] deterministic update rules (`state_updates` with optional `when`, evaluated by the existing safe expression evaluator)
+- [x] offline/mock equivalent for testing (`MockDecisionProvider`; the ALO runs even with no provider configured when Jev is marked optional)
 
 ## P4 — Accessibility and ecosystem
 
-- [ ] CLI workflows
-- [ ] self-hostable Studio
-- [ ] plain-file import/export
-- [ ] package format
-- [ ] Git repository install
-- [ ] optional discovery registry
-- [ ] AEP governance
+- [x] CLI workflows (`alo validate/prompt/graph/run` dispatch on `spec_version`; `alo test`/`alo package` remain Draft 0.1-only for now)
+- [x] self-hostable Studio (`/api/prompt`, `/api/graph`, `/api/run` all dispatch on `spec_version`)
+- [x] plain-file import/export (pre-existing, client-side; unaffected by this correction)
+- [x] package format (pre-existing `alo package build/install`; verified unchanged against a canonical 0.2 ALO)
+- [x] Git repository install (pre-existing, unaffected)
+- [x] optional discovery registry (pre-existing, unaffected)
+- [x] AEP governance (pre-existing, unaffected)
