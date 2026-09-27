@@ -55,11 +55,18 @@
 
     <section class="actions" aria-label="Studio actions">
       <button id="validate-button" type="button">Validate</button>
+      <button id="prompt-button" type="button">Prompt</button>
       <button id="graph-button" type="button">Graph</button>
       <button id="run-button" type="button">Run</button>
     </section>
 
     <section id="messages" class="messages" aria-live="polite"></section>
+
+    <section id="prompt-panel" class="panel" hidden>
+      <h2>ALO Prompt</h2>
+      <p class="hint">The canonical natural-language rendering of mainObj / subObjList / State / managerObj (canonical ALO documents only — spec_version "0.2").</p>
+      <pre id="prompt-output"></pre>
+    </section>
 
     <section id="graph-panel" class="panel" hidden>
       <h2>Graph</h2>

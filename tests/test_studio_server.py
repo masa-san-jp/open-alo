@@ -20,6 +20,9 @@ class StudioServerTests(unittest.TestCase):
         cls.input_data = json.loads(
             Path("examples/minimal/input.json").read_text(encoding="utf-8")
         )
+        cls.canonical_source = Path("examples/canonical-minimal/alo.yaml").read_text(
+            encoding="utf-8"
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -71,6 +74,35 @@ class StudioServerTests(unittest.TestCase):
         self.assertIn("mermaid", payload)
         self.assertIn("svg", payload)
         self.assertTrue(payload["svg"].startswith("<svg"))
+
+    def test_graph_dispatches_to_object_graph_for_canonical_source(self):
+        status, payload = self._post("/api/graph", {"source": self.canonical_source})
+        self.assertEqual(status, 200)
+        self.assertIn("MAIN_OBJECT", payload["mermaid"])
+        self.assertIn("MANAGER", payload["mermaid"])
+
+    def test_prompt_renders_canonical_source(self):
+        status, payload = self._post("/api/prompt", {"source": self.canonical_source})
+        self.assertEqual(status, 200)
+        self.assertIn("## managerObj", payload["prompt"])
+
+    def test_prompt_rejects_legacy_source(self):
+        status, payload = self._post("/api/prompt", {"source": self.source})
+        self.assertEqual(status, 200)
+        self.assertIn("spec_version 0.2", payload["errors"][0])
+
+    def test_run_dispatches_to_manager_runtime_for_canonical_source(self):
+        status, record = self._post(
+            "/api/run",
+            {
+                "source": self.canonical_source,
+                "input": {"user_message": "hello"},
+                "responses": {"analyze_comprehension": {"p_true": 0.9}},
+            },
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(record["status"], "ok")
+        self.assertIn("State_after", record)
 
     def test_run_returns_mock_run_record(self):
         status, record = self._post(

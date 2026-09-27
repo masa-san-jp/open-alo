@@ -5,6 +5,7 @@
   var messages = document.getElementById("messages");
   var exampleSelect = document.getElementById("example-select");
   var graphPanel = document.getElementById("graph-panel");
+  var promptPanel = document.getElementById("prompt-panel");
   var runPanel = document.getElementById("run-panel");
 
   function showErrors(errors) {
@@ -42,6 +43,21 @@
   document.getElementById("validate-button").addEventListener("click", function () {
     post("/api/validate", { source: source.value })
       .then(function (result) { showErrors(result.errors); })
+      .catch(function (error) { showErrors([error.message]); });
+  });
+
+  document.getElementById("prompt-button").addEventListener("click", function () {
+    post("/api/prompt", { source: source.value })
+      .then(function (result) {
+        if (result.errors) {
+          showErrors(result.errors);
+          promptPanel.hidden = true;
+          return;
+        }
+        showErrors([]);
+        document.getElementById("prompt-output").textContent = result.prompt;
+        promptPanel.hidden = false;
+      })
       .catch(function (error) { showErrors([error.message]); });
   });
 

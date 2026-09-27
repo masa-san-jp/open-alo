@@ -9,6 +9,13 @@ shape, and ``/api/validate`` always includes an ``errors`` array.
 ``model``/``api_key``/``base_url`` for an OpenAI-compatible endpoint. The key
 is forwarded only to that endpoint for the single request and is never
 stored or logged by Studio. No other route ever requires it.
+
+``/api/graph`` and ``/api/run`` dispatch on the document's own
+``alo.spec_version``: ``"0.2"`` (canonical: mainObj/subObjList/State/
+managerObj) uses ``compile_object_graph``/``run_manager``; ``"0.1"``
+(legacy workflow DSL) keeps using ``compile_alo``/``run``. ``/api/prompt``
+only supports canonical documents -- Draft 0.1 has no object model to
+render an ALO Prompt from.
 """
 
 from __future__ import annotations
@@ -18,15 +25,26 @@ import mimetypes
 import tempfile
 import urllib.parse
 import webbrowser
+from collections.abc import Mapping
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from packages.compiler import CompileError, MermaidError, compile_alo, render_mermaid, render_svg
+from packages.compiler import (
+    CompileError,
+    MermaidError,
+    ObjectGraphError,
+    PromptError,
+    compile_alo,
+    compile_object_graph,
+    render_mermaid,
+    render_prompt,
+    render_svg,
+)
 from packages.core import LoadError, load_document, validate_alo
 from packages.providers import MockDecisionProvider, ProviderError
-from packages.runtime import run as run_alo
+from packages.runtime import ManagerError, run as run_alo, run_manager
 from packages.studio.assistant import AssistantError, draft_alo
 
 
@@ -81,6 +99,7 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
         routes = {
             "/api/validate": self._post_validate,
             "/api/graph": self._post_graph,
+            "/api/prompt": self._post_prompt,
             "/api/run": self._post_run,
             "/api/assist": self._post_assist,
         }
@@ -121,16 +140,42 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, {"errors": errors})
             return
         try:
-            graph = compile_alo(document)
+            if _is_canonical(document):
+                graph = compile_object_graph(document)
+            else:
+                graph = compile_alo(document)
             mermaid = render_mermaid(graph, direction=direction)
             svg = render_svg(graph, direction=direction)
-        except (CompileError, MermaidError, ValueError) as error:
+        except (CompileError, ObjectGraphError, MermaidError, ValueError) as error:
             self._send_json(HTTPStatus.OK, {"errors": [str(error)]})
             return
         self._send_json(
             HTTPStatus.OK,
             {"graph": graph, "mermaid": mermaid, "svg": svg},
         )
+
+    def _post_prompt(self, body: Any) -> None:
+        try:
+            source = _source_from_body(body)
+        except ValueError as error:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"errors": [str(error)]})
+            return
+        document, errors = _load_and_validate_text(source)
+        if errors or document is None:
+            self._send_json(HTTPStatus.OK, {"errors": errors})
+            return
+        if not _is_canonical(document):
+            self._send_json(
+                HTTPStatus.OK,
+                {"errors": ["alo prompt requires a canonical (spec_version 0.2) ALO document"]},
+            )
+            return
+        try:
+            prompt = render_prompt(document)
+        except PromptError as error:
+            self._send_json(HTTPStatus.OK, {"errors": [str(error)]})
+            return
+        self._send_json(HTTPStatus.OK, {"prompt": prompt})
 
     def _post_run(self, body: Any) -> None:
         try:
@@ -149,8 +194,11 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, {"errors": errors})
             return
         try:
-            record = run_alo(document, input_data, MockDecisionProvider(responses))
-        except (ValueError, TypeError, KeyError) as error:
+            if _is_canonical(document):
+                record = run_manager(document, input_data, MockDecisionProvider(responses))
+            else:
+                record = run_alo(document, input_data, MockDecisionProvider(responses))
+        except (ValueError, TypeError, KeyError, ManagerError) as error:
             self._send_json(HTTPStatus.OK, {"errors": [str(error)]})
             return
         self._send_json(HTTPStatus.OK, record)
@@ -240,6 +288,11 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: Any) -> None:
         # Keep normal API use quiet; errors are still represented in responses.
         return
+
+
+def _is_canonical(document: Mapping[str, Any]) -> bool:
+    alo = document.get("alo")
+    return isinstance(alo, Mapping) and alo.get("spec_version") == "0.2"
 
 
 def _source_from_body(body: Any) -> str:

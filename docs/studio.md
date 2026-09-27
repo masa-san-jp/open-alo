@@ -47,12 +47,30 @@ Success response:
 {"graph": {"graph_ir_version": "0.1", "source": {}, "nodes": [], "edges": []}, "mermaid": "...", "svg": "<svg ...>...</svg>"}
 ```
 
+For a canonical (`spec_version: "0.2"`) document, `graph` is instead the
+Object Graph IR (`object_graph_ir_version`, `MAIN_OBJECT`/`SUB_OBJECT`/
+`STATE`/`MANAGER`/`INPUT`/`OUTPUT` nodes, plus any `JEV_NOUL`/`JEV_CHOICE`/
+`JEV_SCORE` overlay nodes) -- see docs/spec.md and
+docs/complete-implementation-guide.md. `/api/graph` dispatches on the
+document's own `spec_version`; the caller does not choose.
+
+`POST /api/prompt`
+
+Canonical documents only (`spec_version: "0.2"`). Request:
+`{"source": "<YAML or JSON text>"}`. Success:
+`{"prompt": "<rendered ALO Prompt text>"}` -- the mainObj/subObjList/
+State/managerObj sections from `packages.compiler.render_prompt`. A
+legacy (`0.1`) document returns `{"errors": [...]}`.
+
 `POST /api/run`
 
 Request: `{"source": "<YAML or JSON text>", "input": {}, "responses": {}}`.
 Both object fields default to `{}`. Success returns the Run Record JSON
-directly. `/api/run` uses only `MockDecisionProvider` today by design: the
-no-login local mode works without a network connection or API key.
+directly -- the Draft 0.1 shape (`state_after`/`output`) for a legacy
+document, or the canonical Draft 0.2 shape (`State_after`/`manager_trace`/
+`jev_calls`/`output`) for a canonical one, dispatched the same way as
+`/api/graph`. `/api/run` uses only `MockDecisionProvider` today by design:
+the no-login local mode works without a network connection or API key.
 
 The Studio's import file control uses the browser `FileReader` API, and its
 Download button uses a client-side `Blob`; neither operation writes to the
