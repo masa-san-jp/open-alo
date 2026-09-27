@@ -192,7 +192,38 @@ class OpenAICompatibleProvider:
             )
         return dict(response)
 
+    def complete(self, system_prompt: str, user_prompt: str) -> str:
+        """Return raw free-form text content for a system/user prompt pair.
+
+        Unlike :meth:`binary`/:meth:`categorical`/:meth:`scalar`, this does not
+        parse or normalize the response — it is meant for free-form drafting
+        tasks (see ``packages.studio.assistant``), not typed decisions.
+        """
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0,
+        }
+        response = self._call_transport_with_retry(payload)
+        return self._extract_content(response)
+
     def _decode_result(self, response: Mapping[str, Any]) -> dict[str, Any]:
+        content = self._extract_content(response)
+        try:
+            result = json.loads(content)
+        except (TypeError, ValueError) as error:
+            raise ProviderResponseError(
+                "chat-completion response content is not valid JSON"
+            ) from error
+        if not isinstance(result, dict):
+            raise ProviderResponseError("chat-completion JSON content must be an object")
+        return result
+
+    def _extract_content(self, response: Mapping[str, Any]) -> str:
         try:
             choices = response["choices"]
             first_choice = choices[0]
@@ -207,15 +238,7 @@ class OpenAICompatibleProvider:
             raise ProviderResponseError(
                 "chat-completion response content is missing or not text"
             )
-        try:
-            result = json.loads(content)
-        except (TypeError, ValueError) as error:
-            raise ProviderResponseError(
-                "chat-completion response content is not valid JSON"
-            ) from error
-        if not isinstance(result, dict):
-            raise ProviderResponseError("chat-completion JSON content must be an object")
-        return result
+        return content
 
     def _default_transport(self, payload: dict[str, Any]) -> dict[str, Any]:
         request = urllib.request.Request(

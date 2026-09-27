@@ -2,6 +2,8 @@ import json
 import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from packages.studio import StudioServer
@@ -36,8 +38,12 @@ class StudioServerTests(unittest.TestCase):
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urlopen(request, timeout=3) as response:
-            return response.status, json.loads(response.read().decode("utf-8"))
+        try:
+            with urlopen(request, timeout=3) as response:
+                return response.status, json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            with error:
+                return error.code, json.loads(error.read().decode("utf-8"))
 
     def test_default_host_is_loopback(self):
         self.assertEqual(self.server.server_address[0], "127.0.0.1")
@@ -81,6 +87,31 @@ class StudioServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(record["status"], "terminal_state")
         self.assertEqual(record["provider"], "mock")
+
+    def test_assist_returns_generated_source_and_validity(self):
+        canned = self.source
+        with patch("packages.studio.server.draft_alo", return_value=canned) as mock_draft:
+            status, payload = self._post(
+                "/api/assist",
+                {
+                    "description": "Route urgent support requests.",
+                    "model": "fake-model",
+                    "api_key": "fake-key",
+                },
+            )
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["source"], canned)
+        self.assertTrue(payload["valid"])
+        self.assertEqual(payload["errors"], [])
+        mock_draft.assert_called_once()
+        _, kwargs = mock_draft.call_args
+        self.assertEqual(kwargs["model"], "fake-model")
+        self.assertEqual(kwargs["api_key"], "fake-key")
+
+    def test_assist_rejects_missing_description(self):
+        status, payload = self._post("/api/assist", {"model": "fake-model"})
+        self.assertEqual(status, 400)
+        self.assertTrue(payload["errors"])
 
 
 if __name__ == "__main__":

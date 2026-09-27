@@ -4,6 +4,11 @@ API envelope convention: malformed requests use HTTP 400 with
 ``{"errors": ["..."]}``; semantic ALO errors use HTTP 200 with the same
 error-only object. Successful responses retain the endpoint-specific payload
 shape, and ``/api/validate`` always includes an ``errors`` array.
+
+``/api/assist`` is optional: it requires the caller to supply their own
+``model``/``api_key``/``base_url`` for an OpenAI-compatible endpoint. The key
+is forwarded only to that endpoint for the single request and is never
+stored or logged by Studio. No other route ever requires it.
 """
 
 from __future__ import annotations
@@ -20,8 +25,9 @@ from typing import Any
 
 from packages.compiler import CompileError, MermaidError, compile_alo, render_mermaid, render_svg
 from packages.core import LoadError, load_document, validate_alo
-from packages.providers import MockDecisionProvider
+from packages.providers import MockDecisionProvider, ProviderError
 from packages.runtime import run as run_alo
+from packages.studio.assistant import AssistantError, draft_alo
 
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -76,6 +82,7 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
             "/api/validate": self._post_validate,
             "/api/graph": self._post_graph,
             "/api/run": self._post_run,
+            "/api/assist": self._post_assist,
         }
         handler = routes.get(path)
         if handler is None:
@@ -147,6 +154,34 @@ class _StudioRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, {"errors": [str(error)]})
             return
         self._send_json(HTTPStatus.OK, record)
+
+    def _post_assist(self, body: Any) -> None:
+        description = body.get("description")
+        model = body.get("model")
+        if not isinstance(description, str) or not description.strip():
+            self._send_json(HTTPStatus.BAD_REQUEST, {"errors": ["description must be a non-empty string"]})
+            return
+        if not isinstance(model, str) or not model.strip():
+            self._send_json(HTTPStatus.BAD_REQUEST, {"errors": ["model must be a non-empty string"]})
+            return
+        api_key = body.get("api_key")
+        base_url = body.get("base_url", "https://api.openai.com/v1")
+        if api_key is not None and not isinstance(api_key, str):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"errors": ["api_key must be a string"]})
+            return
+        if not isinstance(base_url, str) or not base_url.strip():
+            self._send_json(HTTPStatus.BAD_REQUEST, {"errors": ["base_url must be a non-empty string"]})
+            return
+        try:
+            source = draft_alo(description, model=model, api_key=api_key, base_url=base_url)
+        except (AssistantError, ProviderError) as error:
+            self._send_json(HTTPStatus.OK, {"errors": [str(error)]})
+            return
+        document, errors = _load_and_validate_text(source)
+        self._send_json(
+            HTTPStatus.OK,
+            {"source": source, "valid": document is not None and not errors, "errors": errors},
+        )
 
     def _read_json_body(self) -> Any:
         raw_length = self.headers.get("Content-Length")

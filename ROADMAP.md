@@ -36,7 +36,7 @@
 
 - [x] self-hostable web Studio
 - [x] visual graph viewer
-- [ ] natural-language ALO authoring assistant
+- [x] natural-language ALO authoring assistant
 - [x] import/export as plain files
 - [x] no-login local mode
 

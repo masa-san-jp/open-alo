@@ -24,6 +24,22 @@
       <button id="download-button" type="button">Download</button>
     </section>
 
+    <details id="assist-panel" class="panel">
+      <summary>Generate a draft from a description (optional — requires your own API key)</summary>
+      <p class="hint">Your API key is sent only to the endpoint you configure below, for this one request. Open ALO Studio never stores or logs it.</p>
+      <label for="assist-description">Description</label>
+      <textarea id="assist-description" spellcheck="false" placeholder="Describe the workflow you want to draft…"></textarea>
+      <div class="assist-fields">
+        <label for="assist-model">Model</label>
+        <input id="assist-model" type="text" placeholder="gpt-4o-mini">
+        <label for="assist-base-url">Base URL</label>
+        <input id="assist-base-url" type="text" value="https://api.openai.com/v1">
+        <label for="assist-api-key">API key</label>
+        <input id="assist-api-key" type="password" placeholder="sk-…">
+      </div>
+      <button id="assist-button" type="button">Generate</button>
+    </details>
+
     <section class="editor-grid">
       <div>
         <label for="source">ALO source (YAML or JSON)</label>
