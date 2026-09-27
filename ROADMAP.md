@@ -34,11 +34,11 @@
 
 ## Milestone 3 — Accessibility
 
-- [ ] self-hostable web Studio
-- [ ] visual graph viewer
+- [x] self-hostable web Studio
+- [x] visual graph viewer
 - [ ] natural-language ALO authoring assistant
-- [ ] import/export as plain files
-- [ ] no-login local mode
+- [x] import/export as plain files
+- [x] no-login local mode
 
 ## Milestone 4 — Ecosystem
 
