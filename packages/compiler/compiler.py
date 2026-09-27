@@ -167,6 +167,10 @@ def compile_alo(document: Mapping[str, Any]) -> dict[str, Any]:
             "when": when,
             "set": copy.deepcopy(dict(assignments)),
         }
+        if "stop_condition" in rule:
+            data["stop_condition"] = _required_string(
+                rule, "stop_condition", node_id
+            )
         if "description" in rule:
             data["description"] = rule["description"]
         _add_node(nodes, node_id, "RULE", data)
@@ -183,6 +187,7 @@ def compile_alo(document: Mapping[str, Any]) -> dict[str, Any]:
     stop_conditions = _string_sequence(
         alo.get("stop_conditions", []), "alo.stop_conditions"
     )
+    stop_ids_by_condition: dict[str, str] = {}
     for index, condition in enumerate(stop_conditions, start=1):
         stop_id = f"stop.{_slug(condition, index)}"
         while stop_id in nodes:
@@ -193,6 +198,7 @@ def compile_alo(document: Mapping[str, Any]) -> dict[str, Any]:
             "STOP",
             {"condition": condition},
         )
+        stop_ids_by_condition[condition] = stop_id
 
     for decision, node_id in decision_nodes:
         for reference in _string_sequence(
@@ -203,20 +209,28 @@ def compile_alo(document: Mapping[str, Any]) -> dict[str, Any]:
     for rule, node_id in rule_nodes:
         for reference in _condition_references(rule["when"]):
             _add_reference_edge(nodes, edges, reference, node_id, "GATES")
+        stop_condition = rule.get("stop_condition")
+        if stop_condition is not None:
+            stop_id = stop_ids_by_condition.get(stop_condition)
+            if stop_id is None:
+                raise CompileError(
+                    f"{node_id}.stop_condition is not declared in alo.stop_conditions: "
+                    f"{stop_condition}"
+                )
+            _add_edge(edges, node_id, stop_id, "STOPS")
         assignments = _mapping(rule["set"], f"{node_id}.set")
         for target in assignments:
             _validate_identifier(target, f"{node_id}.set key")
             state_target = f"state.{target}"
             output_target = f"output.{target}"
-            if state_target in nodes and output_target in nodes:
-                raise CompileError(
-                    f"{node_id}.set.{target} is ambiguous: it is both state and output"
-                )
+            found_target = False
             if state_target in nodes:
                 _add_edge(edges, node_id, state_target, "UPDATES")
-            elif output_target in nodes:
+                found_target = True
+            if output_target in nodes:
                 _add_edge(edges, node_id, output_target, "EMITS")
-            else:
+                found_target = True
+            if not found_target:
                 raise CompileError(
                     f"{node_id}.set.{target} does not name a state or output field"
                 )

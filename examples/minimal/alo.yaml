@@ -49,6 +49,7 @@ alo:
       set:
         status: routed
         action: escalate
+      stop_condition: terminal_state
 
     - id: technical
       priority: 20
@@ -56,6 +57,7 @@ alo:
       set:
         status: routed
         action: route_technical
+      stop_condition: terminal_state
 
     - id: billing
       priority: 30
@@ -63,6 +65,7 @@ alo:
       set:
         status: routed
         action: route_billing
+      stop_condition: terminal_state
 
     - id: other
       priority: 40
@@ -70,6 +73,7 @@ alo:
       set:
         status: routed
         action: route_other
+      stop_condition: terminal_state
 
     - id: uncertain
       priority: 100
@@ -77,6 +81,7 @@ alo:
       set:
         status: review
         action: human_review
+      stop_condition: human_review_required
 
   outputs:
     action:

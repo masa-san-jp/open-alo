@@ -74,7 +74,18 @@ The initial edge types are:
 | `UPDATES` | A rule writes a state field |
 | `EMITS` | A rule writes an output field |
 | `DEPENDS_ON` | Reserved for compiler dependencies not represented by the minimal compiler |
-| `STOPS` | Reserved for explicit stop-flow semantics |
+| `STOPS` | A rule declares that matching it ends the run with a named stop condition |
+
+When a `set` target is declared both as a state field and as an output field,
+the compiler emits both an `UPDATES` edge and an `EMITS` edge. This supports
+the common pattern where a rule updates state and exposes the same value as an
+output.
+
+A transition rule may declare an optional `stop_condition`, whose value must
+be one of the ALO's declared `stop_conditions`. The compiler emits a `STOPS`
+edge from the rule to the matching `STOP` node, and the reference runtime
+reports that stop condition as the Run Record's `status` when the rule
+matches.
 
 The compiler sorts nodes and edges deterministically. Edge IDs are derived from
 their source, target, and type, so the same ALO produces the same serialized
@@ -96,3 +107,19 @@ The compiler rejects unresolved references, unknown rule targets, duplicate
 node IDs, and duplicate transition priorities. It does not interpret the
 expression language for derived values; that language is intentionally not
 frozen in ALO Draft 0.1.
+
+## Mermaid output
+
+The reference renderer converts Graph IR into a `flowchart TD` diagram by
+default:
+
+```python
+from packages.compiler import render_mermaid
+
+mermaid = render_mermaid(graph)
+```
+
+Node shapes distinguish inputs, state, decisions, rules, outputs, and stop
+conditions. Edge labels preserve the Graph IR edge type. Labels are HTML-
+escaped and Mermaid IDs are sanitized with deterministic collision handling.
+The renderer accepts `TB`, `TD`, `BT`, `RL`, or `LR` as the optional direction.

@@ -167,6 +167,7 @@
           "propertyNames": {"$ref": "#/$defs/identifier"},
           "additionalProperties": {"$ref": "#/$defs/jsonValue"}
         },
+        "stop_condition": {"$ref": "#/$defs/nonEmptyString"},
         "description": {"$ref": "#/$defs/nonEmptyString"}
       }
     },

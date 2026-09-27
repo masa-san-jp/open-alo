@@ -3,16 +3,16 @@
 ## Milestone 0 — Executable minimum
 
 - [x] JSON Schema for `alo.yaml`
-- [ ] parser and validator
-- [ ] canonical Graph IR
-- [ ] deterministic Mermaid generator
-- [ ] mock Decision Provider
-- [ ] deterministic rule engine
-- [ ] run record format
-- [ ] `alo validate`
-- [ ] `alo graph`
-- [ ] `alo run`
-- [ ] `alo test`
+- [x] parser and validator
+- [x] canonical Graph IR
+- [x] deterministic Mermaid generator
+- [x] mock Decision Provider
+- [x] deterministic rule engine
+- [x] run record format
+- [x] `alo validate`
+- [x] `alo graph`
+- [x] `alo run`
+- [x] `alo test`
 
 ## Milestone 1 — Real providers
 

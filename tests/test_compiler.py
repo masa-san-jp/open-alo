@@ -51,12 +51,14 @@ MINIMAL_ALO = {
                 "priority": 10,
                 "when": "decision.is_emergency.p_true >= threshold.emergency_accept",
                 "set": {"status": "routed", "action": "escalate"},
+                "stop_condition": "terminal_state",
             },
             {
                 "id": "uncertain",
                 "priority": 100,
                 "when": "no_previous_rule_matched",
                 "set": {"status": "review", "action": "human_review"},
+                "stop_condition": "human_review_required",
             },
         ],
         "outputs": {
@@ -95,6 +97,14 @@ class CompilerTests(unittest.TestCase):
         self.assertIn(("decision.is_emergency", "rule.emergency", "GATES"), edges)
         self.assertIn(("rule.emergency", "state.status", "UPDATES"), edges)
         self.assertIn(("rule.emergency", "output.action", "EMITS"), edges)
+        self.assertIn(("rule.emergency", "stop.terminal_state", "STOPS"), edges)
+        self.assertIn(("rule.uncertain", "stop.human_review_required", "STOPS"), edges)
+
+    def test_rejects_undeclared_stop_condition(self):
+        document = copy.deepcopy(MINIMAL_ALO)
+        document["alo"]["transition_rules"][0]["stop_condition"] = "unknown_condition"
+        with self.assertRaisesRegex(CompileError, "not declared in alo.stop_conditions"):
+            compile_alo(document)
 
     def test_output_is_deterministic(self):
         first = graph_to_json(compile_alo(MINIMAL_ALO))
@@ -112,6 +122,21 @@ class CompilerTests(unittest.TestCase):
         document["alo"]["transition_rules"][0]["set"]["missing"] = True
         with self.assertRaisesRegex(CompileError, "does not name a state or output"):
             compile_alo(document)
+
+    def test_shared_state_and_output_target_gets_both_edges(self):
+        document = copy.deepcopy(MINIMAL_ALO)
+        document["alo"]["state_schema"]["action"] = {
+            "type": "string",
+            "initial": "none",
+            "updated_by": "rule_engine",
+        }
+        graph = compile_alo(document)
+        edges = {
+            (edge["from"], edge["to"], edge["type"])
+            for edge in graph["edges"]
+        }
+        self.assertIn(("rule.emergency", "state.action", "UPDATES"), edges)
+        self.assertIn(("rule.emergency", "output.action", "EMITS"), edges)
 
     def test_rejects_unknown_reference(self):
         document = copy.deepcopy(MINIMAL_ALO)

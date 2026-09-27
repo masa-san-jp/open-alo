@@ -1,0 +1,69 @@
+{
+  "cases": [
+    {
+      "name": "emergency",
+      "input": {"message": "prod is down"},
+      "provider": {
+        "is_emergency": {"p_true": 0.97},
+        "category": {"technical": 1.0}
+      },
+      "expected": {
+        "status": "terminal_state",
+        "output": {"action": "escalate"},
+        "state_after": {"status": "routed"}
+      }
+    },
+    {
+      "name": "technical",
+      "input": {"message": "app crashes on login"},
+      "provider": {
+        "is_emergency": {"p_true": 0.05},
+        "category": {"technical": 0.8}
+      },
+      "expected": {
+        "status": "terminal_state",
+        "output": {"action": "route_technical"},
+        "state_after": {"status": "routed"}
+      }
+    },
+    {
+      "name": "billing",
+      "input": {"message": "invoice looks wrong"},
+      "provider": {
+        "is_emergency": {"p_true": 0.05},
+        "category": {"billing": 0.8}
+      },
+      "expected": {
+        "status": "terminal_state",
+        "output": {"action": "route_billing"},
+        "state_after": {"status": "routed"}
+      }
+    },
+    {
+      "name": "other",
+      "input": {"message": "general question"},
+      "provider": {
+        "is_emergency": {"p_true": 0.05},
+        "category": {"other": 0.8}
+      },
+      "expected": {
+        "status": "terminal_state",
+        "output": {"action": "route_other"},
+        "state_after": {"status": "routed"}
+      }
+    },
+    {
+      "name": "uncertain",
+      "input": {"message": "hmm not sure"},
+      "provider": {
+        "is_emergency": {"p_true": 0.1},
+        "category": {"technical": 0.4, "billing": 0.3, "other": 0.3}
+      },
+      "expected": {
+        "status": "human_review_required",
+        "output": {"action": "human_review"},
+        "state_after": {"status": "review"}
+      }
+    }
+  ]
+}
