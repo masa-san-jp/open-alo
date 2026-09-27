@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-alo.org/schema/alo-0.2.schema.json",
+  "title": "Open ALO Canonical Draft 0.2",
+  "description": "JSON Schema for the canonical ALO object model: mainObj + subObjList + State + managerObj. Draft 0.1's workflow-DSL schema is preserved at alo.schema.json for the legacy example only; it is not canonical. See docs/spec.md and docs/implementation-correction.md.",
+  "type": "object",
+  "required": ["alo"],
+  "additionalProperties": false,
+  "properties": {
+    "alo": {"$ref": "#/$defs/alo"}
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "jsonValue": {},
+    "responsibilities": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/nonEmptyString"}
+    },
+    "mainObj": {
+      "type": "object",
+      "required": ["id", "purpose"],
+      "additionalProperties": true,
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "name": {"$ref": "#/$defs/nonEmptyString"},
+        "purpose": {"$ref": "#/$defs/nonEmptyString"},
+        "responsibilities": {"$ref": "#/$defs/responsibilities"}
+      }
+    },
+    "subObj": {
+      "type": "object",
+      "required": ["id", "purpose"],
+      "additionalProperties": true,
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "name": {"$ref": "#/$defs/nonEmptyString"},
+        "purpose": {"$ref": "#/$defs/nonEmptyString"},
+        "responsibilities": {"$ref": "#/$defs/responsibilities"}
+      }
+    },
+    "stateField": {
+      "type": "object",
+      "required": ["type", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"$ref": "#/$defs/nonEmptyString"},
+        "value": {"$ref": "#/$defs/jsonValue"}
+      }
+    },
+    "jevCalculation": {
+      "type": "object",
+      "required": ["type", "question"],
+      "additionalProperties": true,
+      "properties": {
+        "type": {"enum": ["Noul", "Choice", "Score"]},
+        "question": {"$ref": "#/$defs/nonEmptyString"},
+        "options": {"type": "object"},
+        "scale": {"type": "object"}
+      }
+    },
+    "calculation": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "provider": {"$ref": "#/$defs/nonEmptyString"},
+        "jev": {"$ref": "#/$defs/jevCalculation"}
+      }
+    },
+    "stateUpdate": {
+      "type": "object",
+      "required": ["key", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "key": {"$ref": "#/$defs/identifier"},
+        "value": {"$ref": "#/$defs/jsonValue"},
+        "when": {"$ref": "#/$defs/nonEmptyString"}
+      }
+    },
+    "processStep": {
+      "type": "object",
+      "required": ["id", "action"],
+      "additionalProperties": true,
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "action": {"$ref": "#/$defs/nonEmptyString"},
+        "calculation": {"$ref": "#/$defs/calculation"},
+        "state_updates": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/stateUpdate"}
+        }
+      }
+    },
+    "managerObj": {
+      "type": "object",
+      "required": ["input", "process", "output"],
+      "additionalProperties": true,
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "input": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/nonEmptyString"},
+          "minItems": 1
+        },
+        "process": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/processStep"},
+          "minItems": 1
+        },
+        "state_updates": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/stateUpdate"}
+        },
+        "output": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/nonEmptyString"},
+          "minItems": 1
+        }
+      }
+    },
+    "alo": {
+      "type": "object",
+      "required": [
+        "spec_version",
+        "id",
+        "version",
+        "mainObj",
+        "subObjList",
+        "State",
+        "managerObj"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "spec_version": {"const": "0.2"},
+        "id": {"$ref": "#/$defs/identifier"},
+        "version": {"$ref": "#/$defs/nonEmptyString"},
+        "mainObj": {"$ref": "#/$defs/mainObj"},
+        "subObjList": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/subObj"}
+        },
+        "State": {
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/identifier"},
+          "additionalProperties": {"$ref": "#/$defs/stateField"}
+        },
+        "managerObj": {"$ref": "#/$defs/managerObj"}
+      }
+    }
+  }
+}

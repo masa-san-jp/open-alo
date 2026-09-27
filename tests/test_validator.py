@@ -32,9 +32,20 @@ class ValidatorTests(unittest.TestCase):
 
     def test_rejects_wrong_spec_version(self):
         document = copy.deepcopy(MINIMAL_ALO)
-        document["alo"]["spec_version"] = "0.2"
+        document["alo"]["spec_version"] = "0.9"
         errors = validate_alo(document)
         self.assertIn("alo.spec_version must be '0.1'", errors)
+
+    def test_spec_version_0_2_dispatches_to_canonical_validator(self):
+        # A Draft 0.1-shaped document that merely flips spec_version to "0.2"
+        # is not canonical -- it is missing mainObj/subObjList/State/managerObj.
+        document = copy.deepcopy(MINIMAL_ALO)
+        document["alo"]["spec_version"] = "0.2"
+        errors = validate_alo(document)
+        self.assertIn("alo.mainObj is required", errors)
+        self.assertIn("alo.subObjList is required", errors)
+        self.assertIn("alo.State is required", errors)
+        self.assertIn("alo.managerObj is required", errors)
 
     def test_rejects_invalid_identifier(self):
         document = copy.deepcopy(MINIMAL_ALO)
