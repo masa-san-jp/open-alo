@@ -73,19 +73,60 @@ alo:
       purpose: 状態に応じた説明を作る
 
   State:
-    level: 1
-    progress: 0.0
-    activeStatus: initializing
+    level:
+      type: integer
+      value: 1
+    progress:
+      type: number
+      value: 0.0
+    activeStatus:
+      type: string
+      value: initializing
 
   managerObj:
-    input: user_message
+    id: learning_coach_manager
+    input:
+      - user_message
     process:
-      - 入力を読む
-      - Stateを読む
-      - 必要なsubObjを使う
-      - 必要ならJevで意味判断を行う
-      - 宣言された規則でStateを更新する
-      - 出力を生成する
+      - id: read_input
+        action: 入力とStateを読む
+      - id: analyze
+        action: comprehension_analyzerで理解度を評価する
+        calculation:
+          provider: optional
+          jev:
+            type: Noul
+            question: 学習者は対象概念を実質的に理解しているか
+      - id: respond
+        action: explanation_engineで状態に応じた応答を作る
+    output:
+      - response
+```
+
+（このYAMLはそのまま `alo validate` を通ります。実行方法は次のセクション参照。）
+
+## インストールと実行
+
+```bash
+git clone https://github.com/masa-san-jp/open-alo.git
+cd open-alo
+```
+
+Python 3.10以上が必要です。標準ライブラリのみで動作し、追加の`pip install`は必須ではありません（YAML入力を使う場合のみ、`pip install pyyaml`を推奨——未インストールでもRubyがあればそちらでYAMLを解析します。JSON入力なら追加要件なしで動きます）。
+
+まだパッケージ化されていないため、`alo`コマンドは`python3 -m packages.cli`経由で呼び出します。
+
+```bash
+python3 -m packages.cli validate examples/canonical-minimal/alo.yaml
+python3 -m packages.cli prompt   examples/canonical-minimal/alo.yaml
+python3 -m packages.cli graph    examples/canonical-minimal/alo.yaml
+python3 -m packages.cli test     examples/canonical-minimal
+```
+
+テストスイート全体は次で実行できます。
+
+```bash
+python3 -m unittest discover -s tests
 ```
 
 ## 実装エージェント向け最短導線
@@ -111,6 +152,14 @@ alo:
 ## 目標
 
 Open ALOは、誰でもALOを書き、プロンプトとして使い、図にし、managerObjの判断にJevを使い、実行を記録・再現し、ローカルで実行し、Fork・改変・共有できるOSSを目指します。
+
+## Contributing
+
+貢献方法は [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
+
+## License
+
+[MIT](LICENSE)
 
 ## Status
 
